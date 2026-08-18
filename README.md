@@ -97,4 +97,4 @@ src/types/database.ts   Tipos das tabelas
 
 - `npm run dev` — ambiente de desenvolvimento.
 - `npm run build` — build de produção (roda o type-check do TypeScript).
-- `npm run lint` — ESLint.
+- `npm run lint` — ESLint
