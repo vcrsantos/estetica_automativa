@@ -18,7 +18,7 @@ export async function searchClientes(
     const { data } = await supabase
       .from("clientes")
       .select("*")
-      .order("criado_em", { ascending: false })
+      .order("nome", { ascending: true })
       .limit(limit);
     return data ?? [];
   }

@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 
 import { ClienteDetail } from "@/components/clientes/cliente-detail";
+import { getCurrentUsuario } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ClienteDetailPage({ params }: PageProps<"/clientes/[id]">) {
   const { id } = await params;
+  const usuario = await getCurrentUsuario();
   const supabase = await createClient();
 
   const [{ data: cliente }, { data: veiculos }] = await Promise.all([
@@ -16,5 +18,11 @@ export default async function ClienteDetailPage({ params }: PageProps<"/clientes
     notFound();
   }
 
-  return <ClienteDetail cliente={cliente} veiculos={veiculos ?? []} />;
+  return (
+    <ClienteDetail
+      cliente={cliente}
+      veiculos={veiculos ?? []}
+      isAdmin={usuario.perfil === "administrador"}
+    />
+  );
 }

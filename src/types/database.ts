@@ -5,7 +5,6 @@ export type FormaPagamento = "dinheiro" | "pix" | "debito" | "credito" | "a_praz
 export type StatusPagamento = "pago" | "pendente" | "parcial";
 export type StatusOrcamento = "rascunho" | "enviado" | "aprovado" | "recusado" | "expirado";
 export type TipoFoto = "antes" | "depois";
-export type EtiquetaCliente = "comum" | "frota" | "vip";
 
 // Todos os tipos de linha abaixo usam `type` (não `interface`) de propósito:
 // `Partial<Interface>` não resolve corretamente dentro da cadeia de tipos
@@ -40,9 +39,9 @@ export type Cliente = {
   email: string | null;
   documento: string | null;
   endereco: string | null;
+  cidade: string | null;
   origem: string | null;
   observacoes: string | null;
-  etiqueta: EtiquetaCliente;
   criado_por: string | null;
   criado_em: string;
 };

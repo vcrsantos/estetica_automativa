@@ -1,8 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, Pencil, Save, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
+import { createClient } from "@/lib/supabase/client";
 import { ServicoForm } from "@/components/servicos/servico-form";
 import { PrecosEditor } from "@/components/servicos/precos-editor";
 import { PORTE_LABELS } from "@/lib/validations/cliente";
@@ -22,8 +25,35 @@ export function ServicoDetail({
   precos: Preco[];
   isAdmin: boolean;
 }) {
+  const router = useRouter();
   const [servico, setServico] = React.useState(servicoInicial);
   const [editando, setEditando] = React.useState(false);
+  const [excluindo, setExcluindo] = React.useState(false);
+
+  async function excluirServico() {
+    if (!window.confirm(`Excluir o serviço "${servico.nome}"? Essa ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    setExcluindo(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("servicos").delete().eq("id", servico.id);
+    setExcluindo(false);
+
+    if (error) {
+      if (error.code === "23503") {
+        toast.error(
+          "Este serviço já foi usado em ordens de serviço ou orçamentos e não pode ser excluído. Desative-o em vez disso."
+        );
+      } else {
+        toast.error("Não foi possível excluir o serviço.");
+      }
+      return;
+    }
+
+    toast.success("Serviço excluído.");
+    router.push("/servicos");
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -38,10 +68,29 @@ export function ServicoDetail({
           <p className="text-muted-foreground">{servico.categoria || "Sem categoria"}</p>
         </div>
         {isAdmin && (
-          <Button variant="outline" size="sm" onClick={() => setEditando((v) => !v)}>
-            <Pencil className="size-4" />
-            {editando ? "Cancelar" : "Editar"}
-          </Button>
+          <div className="flex shrink-0 gap-2">
+            <Button variant="outline" size="sm" onClick={() => setEditando((v) => !v)}>
+              {editando ? (
+                "Cancelar"
+              ) : (
+                <>
+                  <Pencil className="size-4" />
+                  Editar
+                </>
+              )}
+            </Button>
+            {editando ? (
+              <Button type="submit" form="servico-edit-form" size="sm">
+                <Save className="size-4" />
+                Salvar
+              </Button>
+            ) : (
+              <Button variant="destructive" size="sm" disabled={excluindo} onClick={excluirServico}>
+                {excluindo ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                Excluir
+              </Button>
+            )}
+          </div>
         )}
       </div>
 

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,12 +61,16 @@ export function DonutChart({
   dados,
   formatarValor,
   vazio,
+  href,
+  hrefLabel = "Ver detalhes",
 }: {
   titulo: string;
   /** Máximo de 4 categorias (paleta validada) — agrupe o resto em "Outros" antes de passar aqui. */
   dados: ItemDonut[];
   formatarValor: (v: number) => string;
   vazio: string;
+  href?: string;
+  hrefLabel?: string;
 }) {
   const total = dados.reduce((acc, d) => acc + d.valor, 0);
 
@@ -110,13 +116,26 @@ export function DonutChart({
                     />
                     <span className="truncate text-foreground">{d.label}</span>
                   </div>
-                  <span className="shrink-0 font-medium tabular-nums text-muted-foreground">
-                    {formatarPercentual(d.valor, total)}
+                  <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
+                    <span className="font-medium text-foreground">{formatarValor(d.valor)}</span>
+                    <span className="w-9 text-right text-muted-foreground">
+                      {formatarPercentual(d.valor, total)}
+                    </span>
                   </span>
                 </div>
               ))}
             </div>
           </div>
+        )}
+
+        {href && (
+          <Link
+            href={href}
+            className="mt-4 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            {hrefLabel}
+            <ArrowRight className="size-3" />
+          </Link>
         )}
       </CardContent>
     </Card>

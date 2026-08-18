@@ -1,13 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Car, Pencil, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Car, Loader2, Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
-import { ETIQUETA_LABELS, PORTE_LABELS } from "@/lib/validations/cliente";
+import { PORTE_LABELS } from "@/lib/validations/cliente";
 import type { Cliente, Veiculo } from "@/types/database";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,15 +29,42 @@ import { VeiculoForm } from "@/components/clientes/veiculo-form";
 export function ClienteDetail({
   cliente: clienteInicial,
   veiculos: veiculosIniciais,
+  isAdmin,
 }: {
   cliente: Cliente;
   veiculos: Veiculo[];
+  isAdmin: boolean;
 }) {
+  const router = useRouter();
   const [cliente, setCliente] = React.useState(clienteInicial);
   const [veiculos, setVeiculos] = React.useState(veiculosIniciais);
   const [editandoCliente, setEditandoCliente] = React.useState(false);
   const [dialogVeiculoAberto, setDialogVeiculoAberto] = React.useState(false);
   const [veiculoEmEdicao, setVeiculoEmEdicao] = React.useState<Veiculo | undefined>();
+  const [excluindo, setExcluindo] = React.useState(false);
+
+  async function excluirCliente() {
+    if (!window.confirm(`Excluir o cliente ${cliente.nome}? Essa ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    setExcluindo(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("clientes").delete().eq("id", cliente.id);
+    setExcluindo(false);
+
+    if (error) {
+      if (error.code === "23503") {
+        toast.error("Este cliente tem ordens de serviço ou orçamentos vinculados e não pode ser excluído.");
+      } else {
+        toast.error("Não foi possível excluir o cliente.");
+      }
+      return;
+    }
+
+    toast.success("Cliente excluído.");
+    router.push("/clientes");
+  }
 
   function abrirNovoVeiculo() {
     setVeiculoEmEdicao(undefined);
@@ -74,18 +102,37 @@ export function ClienteDetail({
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">{cliente.nome}</h1>
-            <Badge variant={cliente.etiqueta === "vip" ? "default" : "outline"}>
-              {ETIQUETA_LABELS[cliente.etiqueta]}
-            </Badge>
-          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">{cliente.nome}</h1>
           <p className="text-muted-foreground">{cliente.telefone}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setEditandoCliente((v) => !v)}>
-          <Pencil className="size-4" />
-          {editandoCliente ? "Cancelar" : "Editar"}
-        </Button>
+        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+          <Button variant="outline" size="sm" render={<Link href="/clientes" />} nativeButton={false}>
+            <ArrowLeft className="size-4" />
+            Voltar
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setEditandoCliente((v) => !v)}>
+            {editandoCliente ? (
+              "Cancelar"
+            ) : (
+              <>
+                <Pencil className="size-4" />
+                Editar
+              </>
+            )}
+          </Button>
+          {editandoCliente && (
+            <Button type="submit" form="cliente-edit-form" size="sm">
+              <Save className="size-4" />
+              Salvar
+            </Button>
+          )}
+          {isAdmin && !editandoCliente && (
+            <Button variant="destructive" size="sm" disabled={excluindo} onClick={excluirCliente}>
+              {excluindo ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+              Excluir
+            </Button>
+          )}
+        </div>
       </div>
 
       {editandoCliente ? (
@@ -109,6 +156,7 @@ export function ClienteDetail({
             <InfoField label="E-mail" value={cliente.email} />
             <InfoField label="CPF/CNPJ" value={cliente.documento} />
             <InfoField label="Endereço" value={cliente.endereco} />
+            <InfoField label="Cidade" value={cliente.cidade} />
             <InfoField label="Como conheceu" value={cliente.origem} />
             {cliente.observacoes && (
               <div className="sm:col-span-2">

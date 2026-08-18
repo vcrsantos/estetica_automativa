@@ -6,9 +6,9 @@ export const clienteSchema = z.object({
   email: z.email("E-mail inválido").optional().or(z.literal("")),
   documento: z.string().optional().or(z.literal("")),
   endereco: z.string().optional().or(z.literal("")),
+  cidade: z.string().optional().or(z.literal("")),
   origem: z.string().optional().or(z.literal("")),
   observacoes: z.string().optional().or(z.literal("")),
-  etiqueta: z.enum(["comum", "frota", "vip"]),
 });
 
 export type ClienteFormValues = z.infer<typeof clienteSchema>;
@@ -26,14 +26,8 @@ export const veiculoSchema = z.object({
 export type VeiculoFormValues = z.infer<typeof veiculoSchema>;
 
 export const PORTE_LABELS: Record<VeiculoFormValues["porte"], string> = {
-  pequeno: "Pequeno (hatch)",
-  medio: "Médio (sedan)",
-  grande: "Grande (SUV/caminhonete)",
+  pequeno: "Pequeno",
+  medio: "Médio",
+  grande: "Grande",
   moto: "Moto",
-};
-
-export const ETIQUETA_LABELS: Record<ClienteFormValues["etiqueta"], string> = {
-  comum: "Comum",
-  frota: "Frota/Empresa",
-  vip: "VIP",
 };

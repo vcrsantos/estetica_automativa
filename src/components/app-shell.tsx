@@ -4,21 +4,35 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard,
-  Users,
-  ClipboardList,
-  Zap,
-  Wallet,
+  Bell,
   ChevronDown,
+  ClipboardList,
+  LayoutDashboard,
   LogOut,
   Menu,
+  Search,
+  Sparkles,
+  Users,
+  Wallet,
+  Zap,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -167,6 +181,16 @@ function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () =>
   );
 }
 
+function CartaoPromocional() {
+  return (
+    <div className="relative m-3 overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_30%_20%,#3b2f8f,#0e0c1c_70%)] px-4 py-5 text-white">
+      <Sparkles className="size-5 text-white/70" />
+      <p className="mt-3 text-sm font-semibold">Excelência em cada detalhe.</p>
+      <p className="text-sm text-white/70">Brilho que fica.</p>
+    </div>
+  );
+}
+
 function UnidadeSeletor() {
   const { unidades, unidadeSelecionadaId, setUnidadeSelecionadaId, podeAlternar } =
     useUnidade();
@@ -201,35 +225,128 @@ function UnidadeSeletor() {
   );
 }
 
-function SairButton() {
+function BuscaGlobal() {
   const router = useRouter();
-  const [loading, setLoading] = React.useState(false);
+  const [termo, setTermo] = React.useState("");
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    function aoTeclar(evento: KeyboardEvent) {
+      if ((evento.metaKey || evento.ctrlKey) && evento.key.toLowerCase() === "k") {
+        evento.preventDefault();
+        inputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, []);
+
+  function aoSubmeter(evento: React.FormEvent) {
+    evento.preventDefault();
+    if (!termo.trim()) return;
+    router.push(`/clientes?busca=${encodeURIComponent(termo.trim())}`);
+  }
+
+  return (
+    <form onSubmit={aoSubmeter} className="relative hidden w-full max-w-sm md:block">
+      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        ref={inputRef}
+        value={termo}
+        onChange={(e) => setTermo(e.target.value)}
+        placeholder="Buscar clientes, OS, serviços..."
+        className="rounded-full pr-14 pl-9"
+      />
+      <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+        ⌘K
+      </kbd>
+    </form>
+  );
+}
+
+function NotificacoesMenu() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label="Notificações" />}>
+        <Bell className="size-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Notificações</DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <p className="px-1.5 py-3 text-center text-sm text-muted-foreground">
+          Nenhuma notificação por enquanto.
+        </p>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function UsuarioMenu({ usuario, isAdmin }: { usuario: Usuario; isAdmin: boolean }) {
+  const router = useRouter();
+  const [saindo, setSaindo] = React.useState(false);
 
   async function handleSignOut() {
-    setLoading(true);
+    setSaindo(true);
     const supabase = createClient();
     await supabase.auth.signOut();
     router.replace("/login");
     router.refresh();
   }
 
+  const iniciais = usuario.nome
+    .trim()
+    .split(/\s+/)
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
-    <Button
-      variant="outline"
-      size="icon"
-      onClick={handleSignOut}
-      disabled={loading}
-      aria-label="Sair"
-    >
-      <LogOut className="size-4" />
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-full py-1 pr-1 pl-1 transition-colors hover:bg-accent sm:pr-2.5"
+          />
+        }
+      >
+        <Avatar size="sm">
+          <AvatarFallback className="bg-primary text-xs font-medium text-primary-foreground">
+            {iniciais}
+          </AvatarFallback>
+        </Avatar>
+        <span className="hidden flex-col items-start leading-tight sm:flex">
+          <span className="text-xs font-semibold uppercase">{usuario.nome.split(" ")[0]}</span>
+          <span className="text-[11px] text-muted-foreground">
+            {isAdmin ? "Administrador" : "Atendente"}
+          </span>
+        </span>
+        <ChevronDown className="hidden size-3.5 text-muted-foreground sm:block" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{usuario.nome}</DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={saindo} onClick={handleSignOut} variant="destructive">
+          <LogOut className="size-4" />
+          Sair
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
 function LogoPolibrilho() {
   return (
-    <div className="flex items-center gap-2 border-b border-border px-4 py-3 sm:px-5">
+    <div className="flex flex-col gap-0.5 border-b border-border px-4 py-3 sm:px-5">
       <span className="font-heading text-lg font-bold tracking-tight text-primary">POLIBRILHO</span>
+      <span className="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+        Detailing automotivo
+      </span>
     </div>
   );
 }
@@ -256,10 +373,7 @@ export function AppShell({
             <div className="flex-1 overflow-y-auto px-3 py-3">
               <NavList isAdmin={isAdmin} />
             </div>
-            <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-3">
-              <ThemeToggle />
-              <SairButton />
-            </div>
+            <CartaoPromocional />
           </aside>
 
           <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
@@ -269,10 +383,7 @@ export function AppShell({
               <div className="flex-1 overflow-y-auto px-3 py-3">
                 <NavList isAdmin={isAdmin} onNavigate={() => setMenuAberto(false)} />
               </div>
-              <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-3">
-                <ThemeToggle />
-                <SairButton />
-              </div>
+              <CartaoPromocional />
             </SheetContent>
           </Sheet>
 
@@ -292,12 +403,14 @@ export function AppShell({
                 POLIBRILHO
               </span>
 
+              <BuscaGlobal />
+
               <div className="ml-auto flex shrink-0 items-center gap-2">
-                <span className="hidden text-sm text-muted-foreground sm:inline">
-                  {usuario.nome} · {isAdmin ? "Administrador" : "Atendente"}
-                </span>
+                <ThemeToggle />
+                <NotificacoesMenu />
                 <Separator orientation="vertical" className="hidden h-6 sm:block" />
                 <UnidadeSeletor />
+                <UsuarioMenu usuario={usuario} isAdmin={isAdmin} />
               </div>
             </header>
 

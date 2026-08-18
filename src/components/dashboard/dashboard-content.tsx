@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { BellRing, Car, Plus } from "lucide-react";
+import { BarChart3, CreditCard, DollarSign, Plus, TrendingUp, Truck, Users, Wrench } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { useUnidade } from "@/components/providers/unidade-provider";
@@ -45,7 +45,7 @@ function OperacionalTile({
   const card = (
     <Card className={href ? "transition-colors hover:bg-accent" : undefined}>
       <CardContent className="flex items-center gap-3 py-4">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+        <div className="flex size-9 items-center justify-center rounded-xl bg-accent text-accent-foreground">
           <Icon className="size-4.5" />
         </div>
         <div>
@@ -126,22 +126,28 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <StatCard
+                    icon={DollarSign}
                     titulo="Faturamento hoje"
                     valor={formatarMoeda(resumo.hoje.faturamento)}
                     variacao={variacaoPercentual(resumo.hoje.faturamento, resumo.ontem.faturamento)}
+                    comparativoLabel="vs ontem"
                   />
                   <StatCard
+                    icon={BarChart3}
                     titulo="Faturamento do mês"
                     valor={formatarMoeda(resumo.mes.faturamento)}
                     variacao={variacaoPercentual(resumo.mes.faturamento, resumo.mes_anterior.faturamento)}
+                    comparativoLabel="vs mês anterior"
                   />
                   <StatCard
+                    icon={Wrench}
                     titulo="Em execução agora"
                     valor={String(resumo.em_execucao)}
                     href="/fila-do-dia"
                     hrefLabel="Ver fila do dia"
                   />
                   <StatCard
+                    icon={CreditCard}
                     titulo="Contas a receber"
                     valor={formatarMoeda(resumo.contas_a_receber)}
                     href="/contas-a-receber"
@@ -152,16 +158,23 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <PeriodoCard titulo="Esta semana" atual={resumo.semana} anterior={resumo.semana_anterior} />
-                <OperacionalTile
-                  icon={Car}
-                  titulo="Previsão de entrega hoje"
-                  valor={String(resumo.previstos_hoje)}
+                <PeriodoCard
+                  icon={TrendingUp}
+                  titulo="Esta semana"
+                  atual={resumo.semana}
+                  anterior={resumo.semana_anterior}
                 />
                 <OperacionalTile
-                  icon={BellRing}
+                  icon={Truck}
+                  titulo="Previsão de entrega hoje"
+                  valor={String(resumo.previstos_hoje)}
+                  href="/fila-do-dia"
+                />
+                <OperacionalTile
+                  icon={Users}
                   titulo="Clientes inativos (15+ dias)"
                   valor={String(resumo.clientes_inativos)}
+                  href="/reativacao"
                 />
               </div>
 
@@ -180,6 +193,8 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
                   )}
                   formatarValor={formatarMoeda}
                   vazio="Sem pagamentos registrados este mês."
+                  href="/financeiro"
+                  hrefLabel="Ver detalhamento financeiro"
                 />
               </div>
 

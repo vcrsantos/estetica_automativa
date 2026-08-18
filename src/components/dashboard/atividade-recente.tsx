@@ -2,16 +2,25 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { useUnidade } from "@/components/providers/unidade-provider";
 import { STATUS_OS_LABELS } from "@/lib/validations/ordem-servico";
 import type { Cliente, OrdemServico, StatusOs } from "@/types/database";
 import { StatusPagamentoBadge } from "@/components/ordens/status-pagamento-badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+function iniciais(nome: string) {
+  const partes = nome.trim().split(/\s+/);
+  const primeira = partes[0]?.[0] ?? "";
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (primeira + ultima).toUpperCase();
+}
 
 const STATUS_BADGE_VARIANT: Record<StatusOs, "info" | "outline" | "destructive" | "success"> = {
   agendado: "outline",
@@ -114,7 +123,12 @@ export function AtividadeRecente() {
                 {ordens.map((os) => (
                   <TableRow key={os.id}>
                     <TableCell>
-                      <Link href={`/ordens/${os.id}`} className="hover:underline">
+                      <Link href={`/ordens/${os.id}`} className="flex items-center gap-2 hover:underline">
+                        <Avatar size="sm">
+                          <AvatarFallback className="bg-accent text-xs font-medium text-accent-foreground">
+                            {iniciais(os.cliente?.nome ?? "?")}
+                          </AvatarFallback>
+                        </Avatar>
                         {os.cliente?.nome ?? "Cliente removido"}
                       </Link>
                     </TableCell>
@@ -136,6 +150,16 @@ export function AtividadeRecente() {
               </TableBody>
             </Table>
           </div>
+        )}
+
+        {!carregando && ordens.length > 0 && (
+          <Link
+            href="/ordens"
+            className="mt-4 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            Ver todas as atividades
+            <ArrowRight className="size-3" />
+          </Link>
         )}
       </CardContent>
     </Card>

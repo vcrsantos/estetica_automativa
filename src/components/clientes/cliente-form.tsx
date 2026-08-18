@@ -1,28 +1,17 @@
 "use client";
 
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
-import {
-  clienteSchema,
-  ETIQUETA_LABELS,
-  type ClienteFormValues,
-} from "@/lib/validations/cliente";
+import { clienteSchema, type ClienteFormValues } from "@/lib/validations/cliente";
 import type { Cliente } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export function ClienteForm({
   cliente,
@@ -34,7 +23,6 @@ export function ClienteForm({
   const {
     register,
     handleSubmit,
-    control,
     formState: { errors, isSubmitting },
   } = useForm<ClienteFormValues>({
     resolver: zodResolver(clienteSchema),
@@ -45,11 +33,11 @@ export function ClienteForm({
           email: cliente.email ?? "",
           documento: cliente.documento ?? "",
           endereco: cliente.endereco ?? "",
+          cidade: cliente.cidade ?? "",
           origem: cliente.origem ?? "",
           observacoes: cliente.observacoes ?? "",
-          etiqueta: cliente.etiqueta,
         }
-      : { etiqueta: "comum" },
+      : {},
   });
 
   async function onSubmit(values: ClienteFormValues) {
@@ -60,9 +48,9 @@ export function ClienteForm({
       email: values.email || null,
       documento: values.documento || null,
       endereco: values.endereco || null,
+      cidade: values.cidade || null,
       origem: values.origem || null,
       observacoes: values.observacoes || null,
-      etiqueta: values.etiqueta,
     };
 
     if (cliente) {
@@ -74,7 +62,8 @@ export function ClienteForm({
         .single();
 
       if (error || !data) {
-        toast.error("Não foi possível salvar as alterações.");
+        console.error(error);
+        toast.error(error ? `Não foi possível salvar as alterações: ${error.message}` : "Não foi possível salvar as alterações.");
         return;
       }
       toast.success("Cliente atualizado.");
@@ -93,7 +82,8 @@ export function ClienteForm({
       .single();
 
     if (error || !data) {
-      toast.error("Não foi possível cadastrar o cliente.");
+      console.error(error);
+      toast.error(error ? `Não foi possível cadastrar o cliente: ${error.message}` : "Não foi possível cadastrar o cliente.");
       return;
     }
     toast.success("Cliente cadastrado.");
@@ -101,7 +91,7 @@ export function ClienteForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+    <form id="cliente-edit-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2 sm:col-span-2">
           <Label htmlFor="nome">Nome / razão social</Label>
@@ -129,30 +119,13 @@ export function ClienteForm({
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="etiqueta">Etiqueta</Label>
-          <Controller
-            control={control}
-            name="etiqueta"
-            render={({ field }) => (
-              <Select items={ETIQUETA_LABELS} value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id="etiqueta">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(ETIQUETA_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-
-        <div className="flex flex-col gap-2 sm:col-span-2">
           <Label htmlFor="endereco">Endereço</Label>
           <Input id="endereco" {...register("endereco")} />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="cidade">Cidade</Label>
+          <Input id="cidade" {...register("cidade")} />
         </div>
 
         <div className="flex flex-col gap-2">
@@ -168,7 +141,7 @@ export function ClienteForm({
 
       <Button type="submit" disabled={isSubmitting} className="w-full sm:w-fit">
         {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-        {cliente ? "Salvar alterações" : "Cadastrar cliente"}
+        {cliente ? "Salvar alterações" : "Salvar"}
       </Button>
     </form>
   );
