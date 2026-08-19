@@ -134,7 +134,7 @@ export function NovoClientePage() {
       .from("clientes")
       .insert({
         nome: values.nome,
-        telefone: values.telefone,
+        telefone: values.telefone || null,
         email: values.email || null,
         documento: values.documento || null,
         endereco: values.endereco || null,
@@ -199,7 +199,7 @@ export function NovoClientePage() {
         <Card className="max-w-2xl">
           <CardHeader>
             <CardTitle>Dados do cliente</CardTitle>
-            <CardDescription>Nome e telefone são obrigatórios.</CardDescription>
+            <CardDescription>Apenas o nome é obrigatório.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -211,7 +211,7 @@ export function NovoClientePage() {
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="telefone">Telefone (WhatsApp)</Label>
-                <Input id="telefone" placeholder="(99) 99999-9999" {...register("telefone")} />
+                <Input id="telefone" placeholder="(99) 99999-9999 — opcional" {...register("telefone")} />
                 {errors.telefone && (
                   <p className="text-sm text-destructive">{errors.telefone.message}</p>
                 )}

@@ -29,7 +29,7 @@ export function ClienteForm({
     defaultValues: cliente
       ? {
           nome: cliente.nome,
-          telefone: cliente.telefone,
+          telefone: cliente.telefone ?? "",
           email: cliente.email ?? "",
           documento: cliente.documento ?? "",
           endereco: cliente.endereco ?? "",
@@ -44,7 +44,7 @@ export function ClienteForm({
     const supabase = createClient();
     const payload = {
       nome: values.nome,
-      telefone: values.telefone,
+      telefone: values.telefone || null,
       email: values.email || null,
       documento: values.documento || null,
       endereco: values.endereco || null,
@@ -101,7 +101,7 @@ export function ClienteForm({
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="telefone">Telefone (WhatsApp)</Label>
-          <Input id="telefone" placeholder="(99) 99999-9999" {...register("telefone")} />
+          <Input id="telefone" placeholder="(99) 99999-9999 — opcional" {...register("telefone")} />
           {errors.telefone && (
             <p className="text-sm text-destructive">{errors.telefone.message}</p>
           )}

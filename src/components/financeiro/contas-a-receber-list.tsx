@@ -168,7 +168,7 @@ export function ContasAReceberList() {
                     {grupo.cliente.nome}
                   </Link>
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">{grupo.cliente.telefone}</p>
+                <p className="text-sm text-muted-foreground">{grupo.cliente.telefone || "Sem telefone"}</p>
               </div>
               <div className="text-right">
                 <p className="font-heading text-lg font-bold tabular-nums">{formatarMoeda(grupo.total)}</p>
@@ -195,22 +195,24 @@ export function ContasAReceberList() {
                 </Link>
               ))}
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-fit"
-                nativeButton={false}
-                render={
-                  <a
-                    href={linkWhatsApp(grupo.cliente.telefone, montarMensagemCobranca(grupo))}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  />
-                }
-              >
-                <MessageCircle className="size-4" />
-                Enviar resumo por WhatsApp
-              </Button>
+              {grupo.cliente.telefone && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-fit"
+                  nativeButton={false}
+                  render={
+                    <a
+                      href={linkWhatsApp(grupo.cliente.telefone, montarMensagemCobranca(grupo))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    />
+                  }
+                >
+                  <MessageCircle className="size-4" />
+                  Enviar resumo por WhatsApp
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}

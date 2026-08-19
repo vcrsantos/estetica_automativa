@@ -35,7 +35,7 @@ export type Usuario = {
 export type Cliente = {
   id: string;
   nome: string;
-  telefone: string;
+  telefone: string | null;
   email: string | null;
   documento: string | null;
   endereco: string | null;

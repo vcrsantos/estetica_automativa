@@ -85,7 +85,7 @@ export function ClienteBuscaRapida({
               className="flex w-full flex-col items-start rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
             >
               <span className="font-medium">{cliente.nome}</span>
-              <span className="text-xs text-muted-foreground">{cliente.telefone}</span>
+              <span className="text-xs text-muted-foreground">{cliente.telefone || "Sem telefone"}</span>
             </button>
           ))}
 

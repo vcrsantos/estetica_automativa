@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { ClienteDetail } from "@/components/clientes/cliente-detail";
-import { getCurrentUsuario } from "@/lib/auth/current-user";
+tuça import { getCurrentUsuario } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ClienteDetailPage({ params }: PageProps<"/clientes/[id]">) {

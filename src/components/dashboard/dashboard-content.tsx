@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BarChart3, CreditCard, DollarSign, Plus, TrendingUp, Truck, Users, Wrench } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import { useUnidade } from "@/components/providers/unidade-provider";
 import { FORMA_PAGAMENTO_LABELS } from "@/lib/validations/ordem-servico";
 import { PORTE_LABELS } from "@/lib/validations/cliente";
@@ -13,6 +14,8 @@ import type { DashboardInsights, DashboardResumo, FormaPagamento, PorteVeiculo }
 import { PeriodoCard } from "@/components/dashboard/periodo-card";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { EvolucaoDiariaChart } from "@/components/dashboard/evolucao-diaria-chart";
+import { VeiculosChart } from "@/components/dashboard/veiculos-chart";
+import { VeiculosResumoCard } from "@/components/dashboard/veiculos-resumo-card";
 import { BarListChart } from "@/components/dashboard/bar-list-chart";
 import { DonutChart, agruparTopCategorias } from "@/components/dashboard/donut-chart";
 import { AtividadeRecente } from "@/components/dashboard/atividade-recente";
@@ -43,9 +46,9 @@ function OperacionalTile({
   href?: string;
 }) {
   const card = (
-    <Card className={href ? "transition-colors hover:bg-accent" : undefined}>
-      <CardContent className="flex items-center gap-3 py-4">
-        <div className="flex size-9 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+    <Card className={cn("h-full", href && "transition-colors hover:bg-accent")}>
+      <CardContent className="flex h-full items-center gap-3 py-4">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
           <Icon className="size-4.5" />
         </div>
         <div>
@@ -56,7 +59,13 @@ function OperacionalTile({
     </Card>
   );
 
-  return href ? <Link href={href}>{card}</Link> : card;
+  return href ? (
+    <Link href={href} className="block h-full">
+      {card}
+    </Link>
+  ) : (
+    card
+  );
 }
 
 function TituloSecao({ children }: { children: React.ReactNode }) {
@@ -111,22 +120,26 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
         <div className="order-2 flex min-w-0 flex-col gap-6 lg:order-1">
           {!pronto ? (
             <div className="flex flex-col gap-6">
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+              <div className="grid gap-4 lg:grid-cols-2">
                 <div className="grid gap-4 sm:grid-cols-2">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <Skeleton key={i} className="h-28 w-full" />
                   ))}
                 </div>
-                <Skeleton className="h-64 w-full" />
+                <div className="flex flex-col gap-4">
+                  <Skeleton className="h-44 w-full" />
+                  <Skeleton className="h-44 w-full" />
+                </div>
               </div>
               <Skeleton className="h-56 w-full" />
             </div>
           ) : (
             <>
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+              <div className="grid gap-4 lg:grid-cols-2">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <StatCard
                     icon={DollarSign}
+                    destaque
                     titulo="Faturamento hoje"
                     valor={formatarMoeda(resumo.hoje.faturamento)}
                     variacao={variacaoPercentual(resumo.hoje.faturamento, resumo.ontem.faturamento)}
@@ -134,6 +147,7 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
                   />
                   <StatCard
                     icon={BarChart3}
+                    destaque
                     titulo="Faturamento do mês"
                     valor={formatarMoeda(resumo.mes.faturamento)}
                     variacao={variacaoPercentual(resumo.mes.faturamento, resumo.mes_anterior.faturamento)}
@@ -154,7 +168,10 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
                     hrefLabel="Ver contas a receber"
                   />
                 </div>
-                <EvolucaoDiariaChart dados={insights.evolucao_diaria ?? []} />
+                <div className="flex flex-col gap-4">
+                  <EvolucaoDiariaChart dados={insights.evolucao_diaria ?? []} />
+                  <VeiculosChart dados={insights.evolucao_diaria ?? []} />
+                </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
@@ -177,6 +194,8 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
                   href="/reativacao"
                 />
               </div>
+
+              <VeiculosResumoCard resumo={resumo} />
 
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
                 <AtividadeRecente />

@@ -231,7 +231,7 @@ export function NovoOrcamentoForm({
           <div className="flex items-center justify-between rounded-md border p-3">
             <div>
               <p className="font-medium">{cliente.nome}</p>
-              <p className="text-sm text-muted-foreground">{cliente.telefone}</p>
+              <p className="text-sm text-muted-foreground">{cliente.telefone || "Sem telefone"}</p>
             </div>
             <Button type="button" variant="ghost" size="sm" onClick={() => setCliente(null)}>
               Trocar

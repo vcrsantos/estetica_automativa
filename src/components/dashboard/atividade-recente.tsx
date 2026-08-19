@@ -113,7 +113,8 @@ export function AtividadeRecente() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Cliente</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Status do serviço</TableHead>
+                  <TableHead>Pagamento</TableHead>
                   <TableHead className="hidden sm:table-cell">OS</TableHead>
                   <TableHead className="hidden sm:table-cell">Quando</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
@@ -133,10 +134,14 @@ export function AtividadeRecente() {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap items-center gap-1">
-                        <Badge variant={STATUS_BADGE_VARIANT[os.status]}>{STATUS_OS_LABELS[os.status]}</Badge>
-                        {os.status !== "cancelado" && <StatusPagamentoBadge status={os.status_pagamento} />}
-                      </div>
+                      <Badge variant={STATUS_BADGE_VARIANT[os.status]}>{STATUS_OS_LABELS[os.status]}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {os.status !== "cancelado" ? (
+                        <StatusPagamentoBadge status={os.status_pagamento} />
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="hidden text-muted-foreground sm:table-cell">#{os.numero}</TableCell>
                     <TableCell className="hidden text-muted-foreground sm:table-cell">

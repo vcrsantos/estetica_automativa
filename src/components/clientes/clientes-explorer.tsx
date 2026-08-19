@@ -285,7 +285,7 @@ export function ClientesExplorer({
                       {cliente.nome}
                     </Link>
                   </TableCell>
-                  <TableCell>{cliente.telefone}</TableCell>
+                  <TableCell>{cliente.telefone || "—"}</TableCell>
                   <TableCell className="hidden text-muted-foreground sm:table-cell">
                     {cliente.cidade || "—"}
                   </TableCell>

@@ -2,10 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Car, History, Plus } from "lucide-react";
+import { Calendar, Car, CheckCircle2, History, Plus, PlayCircle } from "lucide-react";
+import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import { useUnidade } from "@/components/providers/unidade-provider";
+import { STATUS_OS_LABELS } from "@/lib/validations/ordem-servico";
 import type { Cliente, OrdemServico, StatusOs, Veiculo } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,10 +16,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusPagamentoBadge } from "@/components/ordens/status-pagamento-badge";
 
-const COLUNAS: { status: StatusOs; titulo: string }[] = [
-  { status: "agendado", titulo: "Agendado" },
-  { status: "em_execucao", titulo: "Em execução" },
-  { status: "finalizado", titulo: "Finalizado" },
+const COLUNAS: { status: StatusOs; titulo: string; icon: typeof Calendar }[] = [
+  { status: "agendado", titulo: "Agendado", icon: Calendar },
+  { status: "em_execucao", titulo: "Em execução", icon: PlayCircle },
+  { status: "finalizado", titulo: "Finalizado", icon: CheckCircle2 },
 ];
 
 export function FilaDoDiaBoard() {
@@ -25,6 +28,8 @@ export function FilaDoDiaBoard() {
   const [clientes, setClientes] = React.useState<Map<string, Cliente>>(new Map());
   const [veiculos, setVeiculos] = React.useState<Map<string, Veiculo>>(new Map());
   const [carregando, setCarregando] = React.useState(true);
+  const [alterandoId, setAlterandoId] = React.useState<string | null>(null);
+  const [colunaArrastandoSobre, setColunaArrastandoSobre] = React.useState<StatusOs | null>(null);
 
   React.useEffect(() => {
     let cancelado = false;
@@ -72,6 +77,35 @@ export function FilaDoDiaBoard() {
     };
   }, [unidadeSelecionadaId]);
 
+  async function alterarStatus(osId: string, novoStatus: StatusOs) {
+    setAlterandoId(osId);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("ordens_servico")
+      .update({ status: novoStatus })
+      .eq("id", osId)
+      .select("*")
+      .single();
+    setAlterandoId(null);
+
+    if (error || !data) {
+      toast.error("Não foi possível atualizar o status.");
+      return;
+    }
+    setOrdens((atual) => atual.map((o) => (o.id === osId ? data : o)));
+    toast.success(`Status atualizado para "${STATUS_OS_LABELS[novoStatus]}".`);
+  }
+
+  function aoSoltarNaColuna(evento: React.DragEvent<HTMLDivElement>, status: StatusOs) {
+    evento.preventDefault();
+    setColunaArrastandoSobre(null);
+    const osId = evento.dataTransfer.getData("text/plain");
+    if (!osId) return;
+    const os = ordens.find((o) => o.id === osId);
+    if (!os || os.status === status) return;
+    alterarStatus(osId, status);
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -88,12 +122,28 @@ export function FilaDoDiaBoard() {
         </div>
       </div>
 
+      <p className="text-xs text-muted-foreground">
+        Arraste o cartão para outra coluna, ou use os botões de status nele, para atualizar sem abrir a OS.
+      </p>
+
       <div className="grid gap-4 sm:grid-cols-3">
         {COLUNAS.map((coluna) => {
           const ordensDaColuna = ordens.filter((o) => o.status === coluna.status);
           return (
-            <div key={coluna.status} className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
+            <div
+              key={coluna.status}
+              className={cn(
+                "flex flex-col gap-2 rounded-lg p-1 transition-colors",
+                colunaArrastandoSobre === coluna.status && "bg-accent"
+              )}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (colunaArrastandoSobre !== coluna.status) setColunaArrastandoSobre(coluna.status);
+              }}
+              onDragLeave={() => setColunaArrastandoSobre(null)}
+              onDrop={(e) => aoSoltarNaColuna(e, coluna.status)}
+            >
+              <div className="flex items-center justify-between px-1">
                 <h2 className="text-sm font-semibold text-muted-foreground">{coluna.titulo}</h2>
                 <Badge variant="outline">{ordensDaColuna.length}</Badge>
               </div>
@@ -115,8 +165,13 @@ export function FilaDoDiaBoard() {
                     const cliente = clientes.get(os.cliente_id);
                     const veiculo = os.veiculo_id ? veiculos.get(os.veiculo_id) : null;
                     return (
-                      <Link key={os.id} href={`/ordens/${os.id}`}>
-                        <Card className="transition-colors hover:bg-accent">
+                      <Link
+                        key={os.id}
+                        href={`/ordens/${os.id}`}
+                        draggable
+                        onDragStart={(e) => e.dataTransfer.setData("text/plain", os.id)}
+                      >
+                        <Card className="cursor-grab transition-colors hover:bg-accent active:cursor-grabbing">
                           <CardContent className="flex flex-col gap-1 py-3">
                             <div className="flex items-center justify-between">
                               <span className="font-medium">{cliente?.nome ?? "Cliente"}</span>
@@ -141,6 +196,34 @@ export function FilaDoDiaBoard() {
                               </span>
                             </div>
                             <StatusPagamentoBadge status={os.status_pagamento} />
+
+                            <div className="mt-1 flex gap-1">
+                              {COLUNAS.map((c) => {
+                                const Icon = c.icon;
+                                const ativo = c.status === os.status;
+                                return (
+                                  <button
+                                    key={c.status}
+                                    type="button"
+                                    aria-label={`Mover para ${c.titulo}`}
+                                    disabled={ativo || alterandoId === os.id}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      alterarStatus(os.id, c.status);
+                                    }}
+                                    className={cn(
+                                      "flex flex-1 items-center justify-center rounded-md border py-1 transition-colors",
+                                      ativo
+                                        ? "border-primary bg-primary/10 text-primary"
+                                        : "border-border text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
+                                    )}
+                                  >
+                                    <Icon className="size-3.5" />
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </CardContent>
                         </Card>
                       </Link>

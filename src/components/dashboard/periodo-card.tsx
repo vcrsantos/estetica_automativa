@@ -29,8 +29,8 @@ export function PeriodoCard({
   const ticketMedio = atual.qtd_servicos > 0 ? atual.faturamento / atual.qtd_servicos : 0;
 
   return (
-    <Card>
-      <CardContent className="flex items-start gap-3 py-4">
+    <Card className="h-full">
+      <CardContent className="flex h-full items-start gap-3 py-4">
         {Icon && (
           <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
             <Icon className="size-4.5" />
@@ -38,14 +38,14 @@ export function PeriodoCard({
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="text-xs text-muted-foreground">{titulo}</p>
-          <div className="flex items-baseline gap-2">
-            <span className="font-heading text-lg font-bold tabular-nums">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="font-heading text-lg font-bold tabular-nums whitespace-nowrap">
               {formatarMoeda(atual.faturamento)}
             </span>
             {variacao !== null && (
               <span
                 className={cn(
-                  "flex items-center gap-0.5 text-xs font-medium",
+                  "flex items-center gap-0.5 text-xs font-medium whitespace-nowrap",
                   variacao >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive"
                 )}
               >
@@ -58,9 +58,9 @@ export function PeriodoCard({
               </span>
             )}
           </div>
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="text-xs leading-snug text-muted-foreground">
             {atual.qtd_servicos} serviço{atual.qtd_servicos === 1 ? "" : "s"} · ticket médio{" "}
-            {formatarMoeda(ticketMedio)}
+            <span className="whitespace-nowrap">{formatarMoeda(ticketMedio)}</span>
           </p>
         </div>
       </CardContent>

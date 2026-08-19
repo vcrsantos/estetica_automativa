@@ -7,9 +7,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <ThemeToggle />
       </div>
       <div className="flex flex-col items-center gap-1 text-center">
-        <span className="font-heading text-2xl font-bold tracking-tight text-primary">
-          POLIBRILHO
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element -- logo estático em public/, sem necessidade do pipeline de otimização de imagem */}
+        <img src="/logo-polibrilho.png" alt="POLIBRILHO Estética Automotiva" className="h-32 w-auto" />
         <span className="text-sm text-muted-foreground">
           Sistema de gestão interna
         </span>

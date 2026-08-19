@@ -12,6 +12,7 @@ export function StatCard({
   comparativoLabel,
   tom,
   icon: Icon,
+  destaque,
   href,
   hrefLabel = "Ver detalhes",
 }: {
@@ -24,15 +25,24 @@ export function StatCard({
   /** Colore o valor direto (sem seta de tendência) — use quando não há período anterior para comparar. */
   tom?: "positivo" | "negativo";
   icon?: ComponentType<{ className?: string }>;
+  /** Destaca o card com um acento dourado — usado nos KPIs de faturamento para diferenciar de indicadores operacionais. */
+  destaque?: boolean;
   href?: string;
   hrefLabel?: string;
 }) {
   return (
-    <Card>
+    <Card className={cn(destaque && "border-amber-400/40 bg-amber-50/60 dark:bg-amber-500/[0.06]")}>
       <CardContent className="flex h-full flex-col gap-3 py-4">
         <div className="flex items-center gap-2.5">
           {Icon && (
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+            <div
+              className={cn(
+                "flex size-9 shrink-0 items-center justify-center rounded-xl",
+                destaque
+                  ? "bg-amber-400/20 text-amber-700 dark:text-amber-400"
+                  : "bg-accent text-accent-foreground"
+              )}
+            >
               <Icon className="size-4.5" />
             </div>
           )}

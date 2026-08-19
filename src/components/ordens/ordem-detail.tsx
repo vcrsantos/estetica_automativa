@@ -178,7 +178,7 @@ export function OrdemDetail({
               Marcar como entregue
             </Button>
           )}
-          {(os.status === "finalizado" || os.status === "entregue") && (
+          {(os.status === "finalizado" || os.status === "entregue") && cliente.telefone && (
             <Button
               variant="outline"
               nativeButton={false}
@@ -217,7 +217,7 @@ export function OrdemDetail({
             <Link href={`/clientes/${cliente.id}`} className="font-medium hover:underline">
               {cliente.nome}
             </Link>
-            <p className="text-muted-foreground">{cliente.telefone}</p>
+            <p className="text-muted-foreground">{cliente.telefone || "Sem telefone"}</p>
             {veiculo ? (
               <p>
                 {veiculo.placa || "Sem placa"} — {veiculo.marca} {veiculo.modelo} ·{" "}

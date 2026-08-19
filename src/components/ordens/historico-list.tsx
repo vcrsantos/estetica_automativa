@@ -132,7 +132,7 @@ export function HistoricoList() {
         const veiculo = os.veiculo_id ? veiculos.get(os.veiculo_id) : null;
         return (
           cliente?.nome.toLowerCase().includes(termoBusca) ||
-          cliente?.telefone.includes(termoBusca) ||
+          cliente?.telefone?.includes(termoBusca) ||
           veiculo?.placa?.toLowerCase().includes(termoBusca)
         );
       })

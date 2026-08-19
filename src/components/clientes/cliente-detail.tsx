@@ -103,7 +103,7 @@ export function ClienteDetail({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{cliente.nome}</h1>
-          <p className="text-muted-foreground">{cliente.telefone}</p>
+          <p className="text-muted-foreground">{cliente.telefone || "Sem telefone"}</p>
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-2">
           <Button variant="outline" size="sm" render={<Link href="/clientes" />} nativeButton={false}>

@@ -183,7 +183,7 @@ function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () =>
 
 function CartaoPromocional() {
   return (
-    <div className="relative m-3 overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_30%_20%,#3b2f8f,#0e0c1c_70%)] px-4 py-5 text-white">
+    <div className="relative m-3 overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_30%_20%,#1d3f8f,#0b1220_70%)] px-4 py-5 text-white">
       <Sparkles className="size-5 text-white/70" />
       <p className="mt-3 text-sm font-semibold">Excelência em cada detalhe.</p>
       <p className="text-sm text-white/70">Brilho que fica.</p>
@@ -342,11 +342,9 @@ function UsuarioMenu({ usuario, isAdmin }: { usuario: Usuario; isAdmin: boolean 
 
 function LogoPolibrilho() {
   return (
-    <div className="flex flex-col gap-0.5 border-b border-border px-4 py-3 sm:px-5">
-      <span className="font-heading text-lg font-bold tracking-tight text-primary">POLIBRILHO</span>
-      <span className="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-        Detailing automotivo
-      </span>
+    <div className="flex items-center justify-center border-b border-border px-4 py-2 sm:px-5">
+      {/* eslint-disable-next-line @next/next/no-img-element -- logo estático em public/, sem necessidade do pipeline de otimização de imagem */}
+      <img src="/logo-polibrilho.png" alt="POLIBRILHO Estética Automotiva" className="h-24 w-auto" />
     </div>
   );
 }
@@ -399,9 +397,12 @@ export function AppShell({
                 <Menu className="size-5" />
               </Button>
 
-              <span className="font-heading text-lg font-bold tracking-tight text-primary lg:hidden">
-                POLIBRILHO
-              </span>
+              {/* eslint-disable-next-line @next/next/no-img-element -- logo estático em public/, sem necessidade do pipeline de otimização de imagem */}
+              <img
+                src="/logo-polibrilho.png"
+                alt="POLIBRILHO Estética Automotiva"
+                className="h-14 w-auto lg:hidden"
+              />
 
               <BuscaGlobal />
 

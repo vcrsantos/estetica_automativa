@@ -16,7 +16,7 @@ type ItemDonut = { label: string; valor: number };
  * fixos porque já validam contra as duas superfícies sem precisar mudar
  * por modo.
  */
-const CORES_DONUT = ["var(--chart-1)", "#d97706", "#0284c7", "#dc2626"];
+const CORES_DONUT = ["var(--chart-1)", "#d97706", "#16a34a", "#dc2626"];
 
 /** Mantém as `max` maiores categorias e agrupa o resto em "Outros", para caber na paleta validada de 4 cores. */
 export function agruparTopCategorias(itens: ItemDonut[], max = 3): ItemDonut[] {
