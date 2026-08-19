@@ -49,80 +49,87 @@
 }
 
 /*
- * POLIBRILHO Design System — Direção C "Azul". Casca branca flutuante
- * sobre canvas azulado, navegação em pílula escura, botões e campos
- * sempre em pílula, cartões com cantos discretos e quase sem sombra
- * (quem flutua é a casca). Tema escuro deriva da mesma paleta azul.
+ * POLIBRILHO Design System — Direção E "Dark Automotive / Premium
+ * Performance". Preto/grafite profundo (nunca chapado), cartões-casca
+ * escuros flutuando sobre o canvas, amarelo/dourado como cor de ação
+ * (reflexo de luz sobre a pintura). Cantos moderados (não pílula) em
+ * botões e cartões; pílula reservada a badges/tags/status. O tema
+ * escuro (`.dark`, padrão do app) segue a paleta exata do documento;
+ * o tema claro (`:root`) é uma leitura própria da mesma marca — dourado
+ * mais fechado (contraste em texto/ícone sobre fundo branco), fundo
+ * marfim em vez do preto profundo.
  */
 :root {
-  --background: #eff4fc;
-  --foreground: #101826;
+  --background: #f6f6f4;
+  --foreground: #14181a;
   --card: #ffffff;
-  --card-foreground: #101826;
+  --card-foreground: #14181a;
   --popover: #ffffff;
-  --popover-foreground: #101826;
-  --primary: #2f6fed;
+  --popover-foreground: #14181a;
+  --primary: #b45309;
   --primary-foreground: #ffffff;
-  --secondary: #e7edf9;
-  --secondary-foreground: #101826;
-  --muted: #e7edf9;
-  --muted-foreground: #626c80;
-  --accent: #eaf0fd;
-  --accent-foreground: #2b53c7;
-  --destructive: #f04438;
-  --border: #dbe3f0;
-  --input: #dbe3f0;
-  --ring: #2f6fed;
-  --chart-1: #2f6fed;
-  --chart-2: #5b8bf3;
-  --chart-3: #0ea5b7;
-  --chart-4: #93b4f7;
-  --chart-5: #c7d9fb;
-  --radius: 0.75rem;
-  --sidebar: #0b1220;
-  --sidebar-foreground: #aab4c8;
-  --sidebar-primary: #2f6fed;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(255, 255, 255, 0.08);
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #2f6fed;
-  --shell-shadow: 0 32px 64px rgba(16, 24, 38, 0.12);
+  --secondary: #eeece7;
+  --secondary-foreground: #14181a;
+  --muted: #eeece7;
+  --muted-foreground: #6b7075;
+  --accent: #fdf3e0;
+  --accent-foreground: #92400e;
+  --destructive: #dc2626;
+  --border: #e4e2dc;
+  --input: #e4e2dc;
+  --ring: #b45309;
+  --chart-1: #b45309;
+  --chart-2: #ea580c;
+  --chart-3: #16a34a;
+  --chart-4: #d97706;
+  --chart-5: #a8a29e;
+  --radius: 0.625rem;
+  --sidebar: #14181a;
+  --sidebar-foreground: #a7adb0;
+  --sidebar-primary: #ffd600;
+  --sidebar-primary-foreground: #101314;
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: #ffd600;
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-ring: #ffd600;
+  --shell-shadow: 0 20px 60px rgba(20, 24, 26, 0.1);
+  --gradient-cta: linear-gradient(100deg, #ffd600 0%, #ffc400 48%, #ff9d00 100%);
 }
 
 .dark {
-  --background: #0c1220;
-  --foreground: #eef2fb;
-  --card: #131b2e;
-  --card-foreground: #eef2fb;
-  --popover: #131b2e;
-  --popover-foreground: #eef2fb;
-  --primary: #6f9bf7;
-  --primary-foreground: #0c1220;
-  --secondary: #1b2740;
-  --secondary-foreground: #eef2fb;
-  --muted: #1b2740;
-  --muted-foreground: #92a0ba;
-  --accent: #1f2c47;
-  --accent-foreground: #93b4f7;
-  --destructive: #f66;
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.14);
-  --ring: #6f9bf7;
-  --chart-1: #6f9bf7;
-  --chart-2: #93b4f7;
-  --chart-3: #34c9d6;
-  --chart-4: #5b8bf3;
-  --chart-5: #c7d9fb;
-  --sidebar: #070b14;
-  --sidebar-foreground: #aab4c8;
-  --sidebar-primary: #6f9bf7;
-  --sidebar-primary-foreground: #0c1220;
-  --sidebar-accent: rgba(255, 255, 255, 0.08);
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #6f9bf7;
-  --shell-shadow: 0 32px 64px rgba(0, 0, 0, 0.4);
+  --background: #070a0c;
+  --foreground: #f7f7f5;
+  --card: #10161a;
+  --card-foreground: #f7f7f5;
+  --popover: #10161a;
+  --popover-foreground: #f7f7f5;
+  --primary: #ffd600;
+  --primary-foreground: #101314;
+  --secondary: #151d22;
+  --secondary-foreground: #f7f7f5;
+  --muted: #0b1013;
+  --muted-foreground: #a7adb0;
+  --accent: #151d22;
+  --accent-foreground: #ffd600;
+  --destructive: #ff5a52;
+  --border: #20282d;
+  --input: #20282d;
+  --ring: #ffd600;
+  --chart-1: #ffd600;
+  --chart-2: #ff9500;
+  --chart-3: #42d392;
+  --chart-4: #ffb800;
+  --chart-5: #a7adb0;
+  --sidebar: #0b1013;
+  --sidebar-foreground: #a7adb0;
+  --sidebar-primary: #ffd600;
+  --sidebar-primary-foreground: #101314;
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: #ffd600;
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-ring: #ffd600;
+  --shell-shadow: 0 20px 60px rgba(0, 0, 0, 0.36);
+  --gradient-cta: linear-gradient(100deg, #ffd600 0%, #ffc400 48%, #ff9d00 100%);
 }
 
 @layer base {
@@ -130,7 +137,10 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255, 214, 0, 0.055), transparent 32%),
+      var(--background);
   }
   html {
     @apply font-sans;

@@ -115,7 +115,7 @@ export function FilaDoDiaBoard() {
             <History className="size-4" />
             Histórico
           </Button>
-          <Button render={<Link href="/ordens/novo" />} nativeButton={false}>
+          <Button variant="gradient" render={<Link href="/ordens/novo" />} nativeButton={false}>
             <Plus className="size-4" />
             Nova OS
           </Button>

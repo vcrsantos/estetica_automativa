@@ -23,8 +23,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F4F2FC" },
-    { media: "(prefers-color-scheme: dark)", color: "#17142C" },
+    { media: "(prefers-color-scheme: light)", color: "#F6F6F4" },
+    { media: "(prefers-color-scheme: dark)", color: "#070A0C" },
   ],
 };
 
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >

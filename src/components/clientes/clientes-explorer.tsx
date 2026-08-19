@@ -189,7 +189,12 @@ export function ClientesExplorer({
             className="pl-8"
           />
         </div>
-        <Button render={<Link href="/clientes/novo" />} nativeButton={false} className="w-full sm:w-fit">
+        <Button
+          variant="gradient"
+          render={<Link href="/clientes/novo" />}
+          nativeButton={false}
+          className="w-full sm:w-fit"
+        >
           <UserPlus className="size-4" />
           Novo cliente
         </Button>

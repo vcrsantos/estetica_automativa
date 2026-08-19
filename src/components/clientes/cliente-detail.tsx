@@ -121,7 +121,7 @@ export function ClienteDetail({
             )}
           </Button>
           {editandoCliente && (
-            <Button type="submit" form="cliente-edit-form" size="sm">
+            <Button variant="gradient" type="submit" form="cliente-edit-form" size="sm">
               <Save className="size-4" />
               Salvar
             </Button>

@@ -30,7 +30,12 @@ export default async function ServicosPage() {
           </p>
         </div>
         {isAdmin && (
-          <Button render={<Link href="/servicos/novo" />} nativeButton={false} className="w-full sm:w-fit">
+          <Button
+            variant="gradient"
+            render={<Link href="/servicos/novo" />}
+            nativeButton={false}
+            className="w-full sm:w-fit"
+          >
             <Plus className="size-4" />
             Novo serviço
           </Button>

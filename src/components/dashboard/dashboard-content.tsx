@@ -110,7 +110,7 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
           <h1 className="text-2xl font-semibold tracking-tight">Olá, {nomeUsuario.split(" ")[0]}</h1>
           <p className="text-muted-foreground">Faturamento e panorama do negócio.</p>
         </div>
-        <Button render={<Link href="/ordens/novo" />} nativeButton={false}>
+        <Button variant="gradient" render={<Link href="/ordens/novo" />} nativeButton={false}>
           <Plus className="size-4" />
           Nova OS
         </Button>

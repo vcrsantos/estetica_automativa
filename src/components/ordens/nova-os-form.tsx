@@ -487,7 +487,7 @@ export function NovaOsForm({
             {total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
           </p>
         </div>
-        <Button size="lg" disabled={salvando} onClick={salvar}>
+        <Button variant="gradient" size="lg" disabled={salvando} onClick={salvar}>
           {salvando && <Loader2 className="size-4 animate-spin" />}
           Abrir OS
         </Button>

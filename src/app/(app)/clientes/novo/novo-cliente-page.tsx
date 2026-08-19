@@ -297,7 +297,7 @@ export function NovoClientePage() {
           </CardContent>
         </Card>
 
-        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-fit">
+        <Button variant="gradient" type="submit" disabled={isSubmitting} className="w-full sm:w-fit">
           {isSubmitting && <Loader2 className="size-4 animate-spin" />}
           Salvar
         </Button>
