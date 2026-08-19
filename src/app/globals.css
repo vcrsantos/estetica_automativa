@@ -60,6 +60,7 @@
  * marfim em vez do preto profundo.
  */
 :root {
+  --font-heading: var(--font-sans);
   --background: #f6f6f4;
   --foreground: #14181a;
   --card: #ffffff;
@@ -153,5 +154,24 @@
   h6 {
     font-family: var(--font-heading);
     letter-spacing: -0.02em;
+  }
+}
+
+@keyframes faixa-insights {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-faixa-insights {
+  animation: faixa-insights 35s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-faixa-insights {
+    animation: none;
   }
 }
