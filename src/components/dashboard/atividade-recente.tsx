@@ -96,7 +96,7 @@ export function AtividadeRecente() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium text-muted-foreground">Atividade recente</CardTitle>
+        <CardTitle className="text-sm font-medium text-foreground">Atividade recente</CardTitle>
       </CardHeader>
       <CardContent>
         {carregando ? (

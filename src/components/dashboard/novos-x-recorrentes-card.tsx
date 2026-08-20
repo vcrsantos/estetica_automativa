@@ -15,7 +15,7 @@ export function NovosXRecorrentesCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+        <CardTitle className="text-sm font-medium text-foreground">
           Clientes novos x recorrentes ({periodoLabel})
         </CardTitle>
       </CardHeader>

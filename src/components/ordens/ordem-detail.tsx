@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { CheckCircle2, Loader2, MessageCircle, PlayCircle, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CheckCircle2, Loader2, MessageCircle, Pencil, PlayCircle, Plus, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -28,6 +29,7 @@ import type {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -67,6 +69,7 @@ export function OrdemDetail({
   itens: OsItem[];
   executoresNomes: string[];
 }) {
+  const router = useRouter();
   const [os, setOs] = React.useState(osInicial);
   const [salvandoStatus, setSalvandoStatus] = React.useState(false);
   const [dialogCancelarAberto, setDialogCancelarAberto] = React.useState(false);
@@ -80,6 +83,13 @@ export function OrdemDetail({
     PrestacaoConta,
     "id" | "numero" | "status"
   > | null>(null);
+  const [reciboVinculado, setReciboVinculado] = React.useState<{ id: string; numero: number } | null>(null);
+  const [editandoServicos, setEditandoServicos] = React.useState(false);
+  const [itensEdicao, setItensEdicao] = React.useState<{ id: string | null; descricao: string; valor: string }[]>(
+    []
+  );
+  const [descontoEdicao, setDescontoEdicao] = React.useState(String(os.desconto));
+  const [salvandoServicos, setSalvandoServicos] = React.useState(false);
 
   React.useEffect(() => {
     let cancelado = false;
@@ -107,7 +117,31 @@ export function OrdemDetail({
       if (!cancelado) setPrestacaoVinculada(prestacao);
     }
 
+    async function carregarRecibo() {
+      const supabase = createClient();
+      const { data: vinculo } = await supabase
+        .from("recibo_os")
+        .select("recibo_id")
+        .eq("os_id", os.id)
+        .eq("ativo", true)
+        .maybeSingle();
+
+      if (!vinculo) {
+        if (!cancelado) setReciboVinculado(null);
+        return;
+      }
+
+      const { data: recibo } = await supabase
+        .from("recibo")
+        .select("id, numero")
+        .eq("id", vinculo.recibo_id)
+        .single();
+
+      if (!cancelado) setReciboVinculado(recibo);
+    }
+
     carregar();
+    carregarRecibo();
     return () => {
       cancelado = true;
     };
@@ -177,6 +211,111 @@ export function OrdemDetail({
     }
     setOs(data);
     toast.success("Pagamento atualizado.");
+  }
+
+  const edicaoBloqueada = reciboVinculado !== null || (prestacaoVinculada?.status === "aberto");
+
+  function iniciarEdicaoServicos() {
+    setItensEdicao(itens.map((i) => ({ id: i.id, descricao: i.descricao, valor: String(i.valor_praticado) })));
+    setDescontoEdicao(String(os.desconto));
+    setEditandoServicos(true);
+  }
+
+  function atualizarItemEdicao(index: number, campo: "descricao" | "valor", valor: string) {
+    setItensEdicao((atual) => atual.map((item, i) => (i === index ? { ...item, [campo]: valor } : item)));
+  }
+
+  function adicionarItemEdicao() {
+    setItensEdicao((atual) => [...atual, { id: null, descricao: "", valor: "" }]);
+  }
+
+  function removerItemEdicao(index: number) {
+    setItensEdicao((atual) => atual.filter((_, i) => i !== index));
+  }
+
+  const totalEdicao =
+    itensEdicao.reduce((acc, i) => acc + (Number(i.valor.replace(",", ".")) || 0), 0) -
+    (Number(descontoEdicao.replace(",", ".")) || 0);
+
+  async function salvarServicos() {
+    if (itensEdicao.some((i) => !i.descricao.trim())) {
+      toast.error("Preencha a descrição de todos os itens.");
+      return;
+    }
+    if (itensEdicao.length === 0) {
+      toast.error("Adicione ao menos um item.");
+      return;
+    }
+    const desconto = Number(descontoEdicao.replace(",", ".")) || 0;
+    if (totalEdicao < 0) {
+      toast.error("O desconto não pode ser maior que o total dos itens.");
+      return;
+    }
+
+    setSalvandoServicos(true);
+    const supabase = createClient();
+
+    const idsMantidos = new Set(itensEdicao.filter((i) => i.id).map((i) => i.id as string));
+    const idsRemovidos = itens.map((i) => i.id).filter((id) => !idsMantidos.has(id));
+
+    if (idsRemovidos.length > 0) {
+      const { error } = await supabase.from("os_itens").delete().in("id", idsRemovidos);
+      if (error) {
+        toast.error("Não foi possível remover um dos itens.");
+        setSalvandoServicos(false);
+        return;
+      }
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    for (const item of itensEdicao) {
+      const valor = Number(item.valor.replace(",", ".")) || 0;
+      if (item.id) {
+        const { error } = await supabase
+          .from("os_itens")
+          .update({ descricao: item.descricao.trim(), valor_praticado: valor, alterado_por: user?.id ?? null })
+          .eq("id", item.id);
+        if (error) {
+          toast.error("Não foi possível salvar um dos itens.");
+          setSalvandoServicos(false);
+          return;
+        }
+      } else {
+        const { error } = await supabase.from("os_itens").insert({
+          os_id: os.id,
+          servico_id: null,
+          descricao: item.descricao.trim(),
+          valor_tabela: valor,
+          valor_praticado: valor,
+          alterado_por: user?.id ?? null,
+        });
+        if (error) {
+          toast.error("Não foi possível adicionar um dos itens.");
+          setSalvandoServicos(false);
+          return;
+        }
+      }
+    }
+
+    const { data, error: erroOs } = await supabase
+      .from("ordens_servico")
+      .update({ desconto, valor_total: totalEdicao })
+      .eq("id", os.id)
+      .select("*")
+      .single();
+
+    setSalvandoServicos(false);
+    if (erroOs || !data) {
+      toast.error("Não foi possível salvar o total da OS.");
+      return;
+    }
+    setOs(data);
+    setEditandoServicos(false);
+    toast.success("Serviços atualizados.");
+    router.refresh();
   }
 
   const mensagemPronto = `Oi, ${cliente.nome.split(" ")[0]}! Seu ${veiculo?.modelo || veiculo?.placa || "veículo"} está pronto na POLIBRILHO ${unidade.nome}. Pode vir buscar quando quiser!`;
@@ -279,35 +418,117 @@ export function OrdemDetail({
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Serviços</CardTitle>
+            {!editandoServicos && os.status !== "cancelado" && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Editar serviços"
+                disabled={edicaoBloqueada}
+                onClick={iniciarEdicaoServicos}
+              >
+                <Pencil className="size-4" />
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="flex flex-col gap-2 text-sm">
-            {itens.map((item) => (
-              <div key={item.id} className="flex items-center justify-between">
-                <span>{item.descricao}</span>
-                <span className="flex items-center gap-1">
-                  {item.valor_praticado !== item.valor_tabela && (
-                    <span className="text-xs text-muted-foreground line-through">
-                      {item.valor_tabela.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                    </span>
-                  )}
-                  <span className="font-medium">
-                    {item.valor_praticado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                  </span>
-                </span>
-              </div>
-            ))}
-            {os.desconto > 0 && (
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>Desconto</span>
-                <span>- {os.desconto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
-              </div>
+            {edicaoBloqueada && (
+              <p className="text-xs text-muted-foreground">
+                {reciboVinculado
+                  ? "Já existe um recibo emitido pra esta OS — cancele o recibo para poder editar os serviços."
+                  : "Pagamento controlado por uma prestação de contas em aberto — não dá pra editar aqui."}
+              </p>
             )}
-            <div className="flex items-center justify-between border-t pt-2 font-semibold">
-              <span>Total</span>
-              <span>{os.valor_total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
-            </div>
+
+            {!editandoServicos ? (
+              <>
+                {itens.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between">
+                    <span>{item.descricao}</span>
+                    <span className="flex items-center gap-1">
+                      {item.valor_praticado !== item.valor_tabela && (
+                        <span className="text-xs text-muted-foreground line-through">
+                          {item.valor_tabela.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </span>
+                      )}
+                      <span className="font-medium">
+                        {item.valor_praticado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+                {os.desconto > 0 && (
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Desconto</span>
+                    <span>- {os.desconto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between border-t pt-2 font-semibold">
+                  <span>Total</span>
+                  <span>{os.valor_total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                {itensEdicao.map((item, index) => (
+                  <div key={index} className="flex items-end gap-2">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      {index === 0 && <span className="text-xs text-muted-foreground">Descrição</span>}
+                      <Input
+                        value={item.descricao}
+                        onChange={(e) => atualizarItemEdicao(index, "descricao", e.target.value)}
+                      />
+                    </div>
+                    <div className="flex w-28 flex-col gap-1">
+                      {index === 0 && <span className="text-xs text-muted-foreground">Valor</span>}
+                      <Input
+                        value={item.valor}
+                        onChange={(e) => atualizarItemEdicao(index, "valor", e.target.value)}
+                        inputMode="decimal"
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={itensEdicao.length === 1}
+                      onClick={() => removerItemEdicao(index)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" className="w-fit" onClick={adicionarItemEdicao}>
+                  <Plus className="size-4" />
+                  Adicionar item
+                </Button>
+
+                <div className="flex items-end gap-2 border-t pt-2">
+                  <div className="flex w-28 flex-col gap-1">
+                    <span className="text-xs text-muted-foreground">Desconto</span>
+                    <Input value={descontoEdicao} onChange={(e) => setDescontoEdicao(e.target.value)} inputMode="decimal" />
+                  </div>
+                  <div className="flex flex-1 items-center justify-end font-semibold">
+                    Total: {totalEdicao.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" disabled={salvandoServicos} onClick={salvarServicos}>
+                    {salvandoServicos && <Loader2 className="size-4 animate-spin" />}
+                    Salvar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={salvandoServicos}
+                    onClick={() => setEditandoServicos(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -43,7 +43,7 @@ function hojeIso() {
 }
 
 function TituloSecao({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-sm font-semibold text-muted-foreground">{children}</h2>;
+  return <h2 className="text-sm font-semibold text-foreground">{children}</h2>;
 }
 
 export function DashboardContent({
@@ -201,7 +201,7 @@ export function DashboardContent({
                   unidades={insights.comparativo_unidades ?? []}
                 />
                 <DonutChart
-                  titulo={`Mix de serviços — receita (${periodo.label})`}
+                  titulo={`Mix de serviços (${periodo.label})`}
                   dados={agruparTopCategorias(
                     (insights.top_servicos ?? []).map((s) => ({
                       label: s.nome,

@@ -9,14 +9,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 type ItemDonut = { label: string; valor: number };
 
 /**
- * Paleta categórica validada com o script do skill de dataviz (checks de
- * banda de luminosidade, piso de croma, separação CVD e piso de visão
- * normal) — passa em claro e escuro nesta ordem fixa. O slot 1 usa
+ * Paleta na família do amarelo (identidade da marca) em vez de cores
+ * categóricas genéricas — cada fatia é uma variação de tom/saturação do
+ * mesmo amarelo/dourado, do mais claro ao mais escuro. O slot 1 usa
  * var(--chart-1) para acompanhar a cor de destaque do tema; os demais são
- * fixos porque já validam contra as duas superfícies sem precisar mudar
- * por modo.
+ * fixos porque já funcionam nas duas superfícies (claro/escuro) sem
+ * precisar mudar por modo. A legenda ao lado de cada fatia (nome + valor)
+ * já resolve a distinção, então tons próximos não prejudicam a leitura.
  */
-const CORES_DONUT = ["var(--chart-1)", "#ff9500", "#42d392", "#ff5a52"];
+const CORES_DONUT = ["var(--chart-1)", "#E0A100", "#B8860B", "#F5D26B"];
 
 /** Mantém as `max` maiores categorias e agrupa o resto em "Outros", para caber na paleta validada de 4 cores. */
 export function agruparTopCategorias(itens: ItemDonut[], max = 3): ItemDonut[] {
@@ -77,7 +78,7 @@ export function DonutChart({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium text-muted-foreground">{titulo}</CardTitle>
+        <CardTitle className="text-sm font-medium text-foreground">{titulo}</CardTitle>
       </CardHeader>
       <CardContent>
         {dados.length === 0 || total <= 0 ? (

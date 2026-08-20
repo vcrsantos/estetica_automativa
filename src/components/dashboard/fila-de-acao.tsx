@@ -101,7 +101,7 @@ export function FilaDeAcao() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium text-muted-foreground">Fila de ação</CardTitle>
+        <CardTitle className="text-sm font-medium text-foreground">Fila de ação</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {carregando && (

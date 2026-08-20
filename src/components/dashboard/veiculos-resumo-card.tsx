@@ -27,7 +27,7 @@ export function VeiculosResumoCard({ resumo }: { resumo: DashboardResumo }) {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
-        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+        <CardTitle className="flex items-center gap-2 text-sm font-medium text-foreground">
           <Car className="size-4" />
           Veículos atendidos
         </CardTitle>

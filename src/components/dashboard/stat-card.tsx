@@ -55,7 +55,7 @@ export function StatCard({
               <Icon className="size-4.5" />
             </div>
           )}
-          <p className="text-sm text-muted-foreground">{titulo}</p>
+          <p className="text-sm font-medium text-foreground">{titulo}</p>
         </div>
 
         <div className="flex flex-col gap-1">

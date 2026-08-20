@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  Search,
   Sparkles,
   Users,
   Wallet,
@@ -21,7 +20,6 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -227,45 +225,6 @@ function UnidadeSeletor() {
   );
 }
 
-function BuscaGlobal() {
-  const router = useRouter();
-  const [termo, setTermo] = React.useState("");
-  const inputRef = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    function aoTeclar(evento: KeyboardEvent) {
-      if ((evento.metaKey || evento.ctrlKey) && evento.key.toLowerCase() === "k") {
-        evento.preventDefault();
-        inputRef.current?.focus();
-      }
-    }
-    window.addEventListener("keydown", aoTeclar);
-    return () => window.removeEventListener("keydown", aoTeclar);
-  }, []);
-
-  function aoSubmeter(evento: React.FormEvent) {
-    evento.preventDefault();
-    if (!termo.trim()) return;
-    router.push(`/clientes?busca=${encodeURIComponent(termo.trim())}`);
-  }
-
-  return (
-    <form onSubmit={aoSubmeter} className="relative hidden w-full max-w-sm md:block">
-      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-      <Input
-        ref={inputRef}
-        value={termo}
-        onChange={(e) => setTermo(e.target.value)}
-        placeholder="Buscar clientes, OS, serviços..."
-        className="rounded-full pr-14 pl-9"
-      />
-      <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-        ⌘K
-      </kbd>
-    </form>
-  );
-}
-
 function NotificacoesMenu() {
   return (
     <DropdownMenu>
@@ -366,8 +325,8 @@ export function AppShell({
 
   return (
     <UnidadeProvider unidades={unidades} unidadeFixaId={unidadeFixaId}>
-      <div className="min-h-screen bg-background p-3 sm:p-5">
-        <div className="mx-auto flex min-h-[calc(100vh-1.5rem)] w-full max-w-[1440px] overflow-hidden rounded-3xl bg-card shadow-[var(--shell-shadow)] sm:min-h-[calc(100vh-2.5rem)] sm:rounded-[34px]">
+      <div className="min-h-screen bg-background">
+        <div className="flex min-h-screen w-full overflow-hidden bg-card">
           <aside className="hidden w-64 shrink-0 flex-col border-r border-border lg:flex">
             <LogoPolibrilho />
             <div className="flex-1 overflow-y-auto px-3 py-3">
@@ -388,7 +347,7 @@ export function AppShell({
           </Sheet>
 
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-            <header className="flex items-center gap-3 border-b border-border px-4 py-3 sm:px-6">
+            <header className="flex items-center gap-3 px-4 py-3 sm:px-6">
               <Button
                 variant="ghost"
                 size="icon"
@@ -405,8 +364,6 @@ export function AppShell({
                 alt="POLIBRILHO Estética Automotiva"
                 className="h-14 w-auto lg:hidden"
               />
-
-              <BuscaGlobal />
 
               <div className="ml-auto flex shrink-0 items-center gap-2">
                 <ThemeToggle />

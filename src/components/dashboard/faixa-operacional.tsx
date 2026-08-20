@@ -101,7 +101,7 @@ export function FaixaOperacional({ resumo }: { resumo: DashboardResumo }) {
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3">
       <div className="flex items-center justify-between px-1">
-        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <p className="text-xs font-semibold tracking-wide text-foreground uppercase">
           Operação agora
         </p>
         <Link

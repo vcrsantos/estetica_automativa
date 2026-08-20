@@ -17,7 +17,7 @@ export function ComparativoUnidadesTabela({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium text-muted-foreground">{titulo}</CardTitle>
+        <CardTitle className="text-sm font-medium text-foreground">{titulo}</CardTitle>
       </CardHeader>
       <CardContent>
         {unidades.length === 0 ? (

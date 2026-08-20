@@ -23,7 +23,7 @@ export function formatarVariacao(
 ): { texto: string; tom: "positivo" | "negativo" | "neutro" } | null {
   if (variacao.estado === "sem-dado") return null;
   if (variacao.estado === "primeiro-registro") {
-    return { texto: "primeiro registro", tom: "neutro" };
+    return { texto: "——T", tom: "neutro" };
   }
   const sinal = variacao.absoluta >= 0 ? "+" : "";
   return {
