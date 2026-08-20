@@ -1,6 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function NovosXRecorrentesCard({ novos, recorrentes }: { novos: number; recorrentes: number }) {
+export function NovosXRecorrentesCard({
+  novos,
+  recorrentes,
+  periodoLabel = "este mês",
+}: {
+  novos: number;
+  recorrentes: number;
+  periodoLabel?: string;
+}) {
   const total = novos + recorrentes;
   const pctNovos = total > 0 ? (novos / total) * 100 : 0;
 
@@ -8,12 +16,12 @@ export function NovosXRecorrentesCard({ novos, recorrentes }: { novos: number; r
     <Card>
       <CardHeader>
         <CardTitle className="text-sm font-medium text-muted-foreground">
-          Clientes novos x recorrentes (este mês)
+          Clientes novos x recorrentes ({periodoLabel})
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {total === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">Sem clientes atendidos este mês.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">Sem clientes atendidos no período.</p>
         ) : (
           <>
             <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">

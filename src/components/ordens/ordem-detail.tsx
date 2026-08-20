@@ -19,6 +19,7 @@ import type {
   FormaPagamento,
   OrdemServico,
   OsItem,
+  PrestacaoConta,
   StatusOs,
   StatusPagamento,
   Unidade,
@@ -75,6 +76,42 @@ export function OrdemDetail({
   );
   const [statusPagamento, setStatusPagamento] = React.useState<StatusPagamento>(os.status_pagamento);
   const [salvandoPagamento, setSalvandoPagamento] = React.useState(false);
+  const [prestacaoVinculada, setPrestacaoVinculada] = React.useState<Pick<
+    PrestacaoConta,
+    "id" | "numero" | "status"
+  > | null>(null);
+
+  React.useEffect(() => {
+    let cancelado = false;
+
+    async function carregar() {
+      const supabase = createClient();
+      const { data: item } = await supabase
+        .from("prestacao_conta_item")
+        .select("prestacao_id")
+        .eq("os_id", os.id)
+        .eq("ativo", true)
+        .maybeSingle();
+
+      if (!item) {
+        if (!cancelado) setPrestacaoVinculada(null);
+        return;
+      }
+
+      const { data: prestacao } = await supabase
+        .from("prestacao_conta")
+        .select("id, numero, status")
+        .eq("id", item.prestacao_id)
+        .single();
+
+      if (!cancelado) setPrestacaoVinculada(prestacao);
+    }
+
+    carregar();
+    return () => {
+      cancelado = true;
+    };
+  }, [os.id]);
 
   async function mudarStatus(novoStatus: StatusOs) {
     setSalvandoStatus(true);
@@ -281,51 +318,72 @@ export function OrdemDetail({
             <CardTitle>Pagamento</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Select
-                items={{ nenhuma: "A definir", ...FORMA_PAGAMENTO_LABELS }}
-                value={formaPagamento}
-                onValueChange={(v) => setFormaPagamento(v as FormaPagamento | "nenhuma")}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Forma de pagamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nenhuma">A definir</SelectItem>
-                  {Object.entries(FORMA_PAGAMENTO_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {prestacaoVinculada && prestacaoVinculada.status === "aberto" ? (
+              <p className="text-sm text-muted-foreground">
+                Pagamento controlado pela prestação{" "}
+                <Link href={`/prestacao-contas/${prestacaoVinculada.id}`} className="font-medium text-primary hover:underline">
+                  {prestacaoVinculada.numero}
+                </Link>
+                .
+              </p>
+            ) : (
+              <>
+                {prestacaoVinculada && prestacaoVinculada.status === "pago" && (
+                  <p className="text-xs text-muted-foreground">
+                    Pago pela prestação{" "}
+                    <Link href={`/prestacao-contas/${prestacaoVinculada.id}`} className="text-primary hover:underline">
+                      {prestacaoVinculada.numero}
+                    </Link>
+                    .
+                  </p>
+                )}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Select
+                    items={{ nenhuma: "A definir", ...FORMA_PAGAMENTO_LABELS }}
+                    value={formaPagamento}
+                    onValueChange={(v) => setFormaPagamento(v as FormaPagamento | "nenhuma")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Forma de pagamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nenhuma">A definir</SelectItem>
+                      {Object.entries(FORMA_PAGAMENTO_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-              <Select
-                items={STATUS_PAGAMENTO_LABELS}
-                value={statusPagamento}
-                onValueChange={(v) => setStatusPagamento(v as StatusPagamento)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(STATUS_PAGAMENTO_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              size="sm"
-              className="w-fit"
-              disabled={salvandoPagamento}
-              onClick={salvarPagamento}
-            >
-              {salvandoPagamento && <Loader2 className="size-4 animate-spin" />}
-              Salvar pagamento
-            </Button>
+                  <Select
+                    items={STATUS_PAGAMENTO_LABELS}
+                    value={statusPagamento}
+                    onValueChange={(v) => setStatusPagamento(v as StatusPagamento)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(STATUS_PAGAMENTO_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  size="sm"
+                  className="w-fit"
+                  disabled={salvandoPagamento}
+                  onClick={salvarPagamento}
+                >
+                  {salvandoPagamento && <Loader2 className="size-4 animate-spin" />}
+                  Salvar pagamento
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       )}

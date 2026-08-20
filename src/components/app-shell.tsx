@@ -69,6 +69,8 @@ const NAV_ITEMS: NavEntrada[] = [
     itens: [
       { href: "/orcamentos", label: "Orçamentos" },
       { href: "/reativacao", label: "Reativação" },
+      { href: "/recibos", label: "Recibos" },
+      { href: "/prestacao-contas", label: "Prestação de contas" },
     ],
   },
   { tipo: "link", href: "/financeiro", label: "Financeiro", icon: Wallet, adminOnly: true },

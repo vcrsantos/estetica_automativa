@@ -31,6 +31,7 @@ function formatarMoeda(valor: number) {
 }
 
 function abrirWhatsApp(cliente: ClienteParaReativar, estilo: Parameters<typeof montarMensagemReativacao>[0]) {
+  if (!cliente.telefone) return;
   const primeiroNome = cliente.nome.split(" ")[0];
   const mensagem = montarMensagemReativacao(estilo, primeiroNome);
   window.open(linkWhatsApp(cliente.telefone, mensagem), "_blank", "noopener,noreferrer");
@@ -128,7 +129,7 @@ export function ReativacaoList() {
                 <TableRow key={cliente.cliente_id}>
                   <TableCell>
                     <p className="font-medium">{cliente.nome}</p>
-                    <p className="text-sm text-muted-foreground">{cliente.telefone}</p>
+                    <p className="text-sm text-muted-foreground">{cliente.telefone || "Sem telefone"}</p>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <p>
@@ -143,23 +144,25 @@ export function ReativacaoList() {
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
-                          <MessageCircle className="size-4" />
-                          <span className="hidden sm:inline">WhatsApp</span>
-                          <ChevronDown className="size-3.5" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {ESTILOS_MENSAGEM.map((estilo) => (
-                            <DropdownMenuItem
-                              key={estilo.id}
-                              onClick={() => abrirWhatsApp(cliente, estilo.id)}
-                            >
-                              {estilo.label}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {cliente.telefone && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+                            <MessageCircle className="size-4" />
+                            <span className="hidden sm:inline">WhatsApp</span>
+                            <ChevronDown className="size-3.5" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {ESTILOS_MENSAGEM.map((estilo) => (
+                              <DropdownMenuItem
+                                key={estilo.id}
+                                onClick={() => abrirWhatsApp(cliente, estilo.id)}
+                              >
+                                {estilo.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"

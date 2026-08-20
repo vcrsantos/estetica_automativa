@@ -2,24 +2,29 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { BarChart3, CreditCard, DollarSign, Plus, TrendingUp, Truck, Users, Wrench } from "lucide-react";
+import { Car, Percent, Plus, Receipt, RefreshCcw } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
 import { useUnidade } from "@/components/providers/unidade-provider";
 import { FORMA_PAGAMENTO_LABELS } from "@/lib/validations/ordem-servico";
 import { PORTE_LABELS } from "@/lib/validations/cliente";
 import { gerarInsights } from "@/lib/dashboard-insights-texto";
+import { calcularVariacao } from "@/lib/dashboard-variacao";
+import { calcularPeriodo, type PeriodoId } from "@/lib/dashboard-periodo";
 import type { DashboardInsights, DashboardResumo, FormaPagamento, PorteVeiculo } from "@/types/database";
-import { PeriodoCard } from "@/components/dashboard/periodo-card";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { EvolucaoDiariaChart } from "@/components/dashboard/evolucao-diaria-chart";
-import { VeiculosChart } from "@/components/dashboard/veiculos-chart";
+import { MetaFaturamentoCard } from "@/components/dashboard/meta-faturamento-card";
+import { MetasDoMesCard } from "@/components/dashboard/metas-do-mes-card";
+import { SeletorPeriodo } from "@/components/dashboard/seletor-periodo";
+import { GraficoCombinado } from "@/components/dashboard/grafico-combinado";
 import { VeiculosResumoCard } from "@/components/dashboard/veiculos-resumo-card";
+import { FaixaOperacional } from "@/components/dashboard/faixa-operacional";
+import { FilaDeAcao } from "@/components/dashboard/fila-de-acao";
 import { BarListChart } from "@/components/dashboard/bar-list-chart";
 import { DonutChart, agruparTopCategorias } from "@/components/dashboard/donut-chart";
+import { ComparativoUnidadesTabela } from "@/components/dashboard/comparativo-unidades-tabela";
 import { AtividadeRecente } from "@/components/dashboard/atividade-recente";
-import { InsightsPanel } from "@/components/dashboard/insights-panel";
+import { InsightsFaixa } from "@/components/dashboard/insights-faixa";
 import { NovosXRecorrentesCard } from "@/components/dashboard/novos-x-recorrentes-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,54 +34,42 @@ function formatarMoeda(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function variacaoPercentual(atual: number, anterior: number): number | null {
-  if (anterior === 0) return atual > 0 ? 100 : null;
-  return ((atual - anterior) / anterior) * 100;
+function ticketMedio(faturamento: number, qtdServicos: number) {
+  return qtdServicos > 0 ? faturamento / qtdServicos : 0;
 }
 
-function OperacionalTile({
-  icon: Icon,
-  titulo,
-  valor,
-  href,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  titulo: string;
-  valor: string;
-  href?: string;
-}) {
-  const card = (
-    <Card className={cn("h-full", href && "transition-colors hover:bg-accent")}>
-      <CardContent className="flex h-full items-center gap-3 py-4">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-          <Icon className="size-4.5" />
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">{titulo}</p>
-          <p className="font-heading text-lg font-bold tabular-nums">{valor}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  return href ? (
-    <Link href={href} className="block h-full">
-      {card}
-    </Link>
-  ) : (
-    card
-  );
+function hojeIso() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function TituloSecao({ children }: { children: React.ReactNode }) {
   return <h2 className="text-sm font-semibold text-muted-foreground">{children}</h2>;
 }
 
-export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
+export function DashboardContent({
+  nomeUsuario,
+  isAdmin,
+}: {
+  nomeUsuario: string;
+  isAdmin: boolean;
+}) {
   const { unidadeSelecionadaId } = useUnidade();
   const [resumo, setResumo] = React.useState<DashboardResumo | null>(null);
   const [insights, setInsights] = React.useState<DashboardInsights | null>(null);
   const [carregando, setCarregando] = React.useState(true);
+  const [periodoId, setPeriodoId] = React.useState<PeriodoId>("mes");
+  const [personalizado, setPersonalizado] = React.useState({ inicio: hojeIso(), fim: hojeIso() });
+
+  const periodo = React.useMemo(
+    () => calcularPeriodo(periodoId, personalizado),
+    [periodoId, personalizado]
+  );
+  const periodoInicioMs = periodo.inicio.getTime();
+  const diasNoPeriodo = Math.max(
+    1,
+    Math.round((periodo.fim.getTime() - periodo.inicio.getTime()) / 86400000) + 1
+  );
+  const periodoFimMs = periodo.fim.getTime();
 
   React.useEffect(() => {
     let cancelado = false;
@@ -85,8 +78,16 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
       setCarregando(true);
       const supabase = createClient();
       const [{ data: dadosResumo }, { data: dadosInsights }] = await Promise.all([
-        supabase.rpc("dashboard_resumo", { p_unidade_id: unidadeSelecionadaId }),
-        supabase.rpc("dashboard_insights", { p_unidade_id: unidadeSelecionadaId }),
+        supabase.rpc("dashboard_resumo", {
+          p_unidade_id: unidadeSelecionadaId,
+          p_inicio: new Date(periodoInicioMs).toISOString(),
+          p_fim: new Date(periodoFimMs).toISOString(),
+        }),
+        supabase.rpc("dashboard_insights", {
+          p_unidade_id: unidadeSelecionadaId,
+          p_inicio: new Date(periodoInicioMs).toISOString(),
+          p_fim: new Date(periodoFimMs).toISOString(),
+        }),
       ]);
       if (!cancelado) {
         setResumo(dadosResumo);
@@ -99,7 +100,7 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
     return () => {
       cancelado = true;
     };
-  }, [unidadeSelecionadaId]);
+  }, [unidadeSelecionadaId, periodoInicioMs, periodoFimMs]);
 
   const pronto = !carregando && resumo && insights;
 
@@ -116,149 +117,157 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
         </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="order-2 flex min-w-0 flex-col gap-6 lg:order-1">
-          {!pronto ? (
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-28 w-full" />
-                  ))}
-                </div>
-                <div className="flex flex-col gap-4">
-                  <Skeleton className="h-44 w-full" />
-                  <Skeleton className="h-44 w-full" />
-                </div>
-              </div>
-              <Skeleton className="h-56 w-full" />
+      <SeletorPeriodo
+        periodoId={periodoId}
+        onPeriodoIdChange={setPeriodoId}
+        personalizado={personalizado}
+        onPersonalizadoChange={setPersonalizado}
+        periodo={periodo}
+      />
+
+      <div className="flex flex-col gap-6">
+        {!pronto ? (
+          <div className="flex flex-col gap-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-28 w-full" />
+              ))}
             </div>
-          ) : (
-            <>
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <StatCard
-                    icon={DollarSign}
-                    destaque
-                    titulo="Faturamento hoje"
-                    valor={formatarMoeda(resumo.hoje.faturamento)}
-                    variacao={variacaoPercentual(resumo.hoje.faturamento, resumo.ontem.faturamento)}
-                    comparativoLabel="vs ontem"
-                  />
-                  <StatCard
-                    icon={BarChart3}
-                    destaque
-                    titulo="Faturamento do mês"
-                    valor={formatarMoeda(resumo.mes.faturamento)}
-                    variacao={variacaoPercentual(resumo.mes.faturamento, resumo.mes_anterior.faturamento)}
-                    comparativoLabel="vs mês anterior"
-                  />
-                  <StatCard
-                    icon={Wrench}
-                    titulo="Em execução agora"
-                    valor={String(resumo.em_execucao)}
-                    href="/fila-do-dia"
-                    hrefLabel="Ver fila do dia"
-                  />
-                  <StatCard
-                    icon={CreditCard}
-                    titulo="Contas a receber"
-                    valor={formatarMoeda(resumo.contas_a_receber)}
-                    href="/contas-a-receber"
-                    hrefLabel="Ver contas a receber"
-                  />
-                </div>
-                <div className="flex flex-col gap-4">
-                  <EvolucaoDiariaChart dados={insights.evolucao_diaria ?? []} />
-                  <VeiculosChart dados={insights.evolucao_diaria ?? []} />
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-3">
-                <PeriodoCard
-                  icon={TrendingUp}
-                  titulo="Esta semana"
-                  atual={resumo.semana}
-                  anterior={resumo.semana_anterior}
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-full min-h-[320px] w-full" />
+            <div className="grid gap-4 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-56 w-full" />
+              ))}
+            </div>
+            <Skeleton className="h-56 w-full" />
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <MetaFaturamentoCard resumo={resumo} isAdmin={isAdmin} />
+                <StatCard
+                  icon={Car}
+                  titulo={`Veículos atendidos (${periodo.label})`}
+                  valor={String(resumo.periodo.qtd_servicos)}
+                  variacao={calcularVariacao(resumo.periodo.qtd_servicos, resumo.periodo_anterior.qtd_servicos)}
+                  formatarVariacaoValor={(v) => String(Math.round(v))}
+                  comparativoLabel="vs período anterior"
+                  legenda={`média: ${(resumo.periodo.qtd_servicos / diasNoPeriodo).toFixed(2)}/dia`}
                 />
-                <OperacionalTile
-                  icon={Truck}
-                  titulo="Previsão de entrega hoje"
-                  valor={String(resumo.previstos_hoje)}
-                  href="/fila-do-dia"
+                <StatCard
+                  icon={Receipt}
+                  titulo={`Ticket médio (${periodo.label})`}
+                  valor={formatarMoeda(ticketMedio(resumo.periodo.faturamento, resumo.periodo.qtd_servicos))}
+                  variacao={calcularVariacao(
+                    ticketMedio(resumo.periodo.faturamento, resumo.periodo.qtd_servicos),
+                    ticketMedio(resumo.periodo_anterior.faturamento, resumo.periodo_anterior.qtd_servicos)
+                  )}
+                  formatarVariacaoValor={formatarMoeda}
+                  comparativoLabel="vs período anterior"
                 />
-                <OperacionalTile
-                  icon={Users}
-                  titulo="Clientes inativos (15+ dias)"
-                  valor={String(resumo.clientes_inativos)}
-                  href="/reativacao"
+                <StatCard
+                  icon={RefreshCcw}
+                  titulo="Taxa de retorno (90 dias)"
+                  valor={`${insights.taxa_retorno?.taxa_retorno_90d ?? 0}%`}
+                  variacao={calcularVariacao(
+                    insights.taxa_retorno?.taxa_retorno_90d ?? 0,
+                    insights.taxa_retorno?.taxa_retorno_90d_anterior ?? 0
+                  )}
+                  formatarVariacaoValor={(v) => `${v.toFixed(1)} p.p.`}
+                  comparativoLabel="vs período anterior"
+                  legenda={
+                    insights.taxa_retorno?.intervalo_medio_dias != null
+                      ? `intervalo médio entre visitas: ${insights.taxa_retorno.intervalo_medio_dias.toFixed(0)} dias`
+                      : undefined
+                  }
                 />
               </div>
 
-              <VeiculosResumoCard resumo={resumo} />
+              <InsightsFaixa insights={gerarInsights(resumo, insights)} />
 
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-                <AtividadeRecente />
+              <FaixaOperacional resumo={resumo} />
+
+              <GraficoCombinado
+                dados={insights.evolucao_diaria ?? []}
+                titulo={`Histórico de faturamento (${periodo.label})`}
+              />
+
+              <div className="grid gap-4 lg:grid-cols-3">
+                <MetasDoMesCard resumo={resumo} />
+                <ComparativoUnidadesTabela
+                  titulo={`Comparativo entre unidades (${periodo.label})`}
+                  unidades={insights.comparativo_unidades ?? []}
+                />
                 <DonutChart
-                  titulo="Formas de pagamento (este mês)"
+                  titulo={`Mix de serviços — receita (${periodo.label})`}
                   dados={agruparTopCategorias(
-                    (insights.formas_pagamento ?? []).map((f) => ({
-                      label:
-                        f.forma_pagamento === "nao_informado"
-                          ? "Não informado"
-                          : FORMA_PAGAMENTO_LABELS[f.forma_pagamento as FormaPagamento],
-                      valor: f.faturamento,
+                    (insights.top_servicos ?? []).map((s) => ({
+                      label: s.nome,
+                      valor: s.faturamento,
                     }))
                   )}
                   formatarValor={formatarMoeda}
-                  vazio="Sem pagamentos registrados este mês."
-                  href="/financeiro"
-                  hrefLabel="Ver detalhamento financeiro"
+                  vazio="Sem serviços registrados no período."
                 />
               </div>
 
               <div className="flex flex-col gap-3">
-                <TituloSecao>Faturamento</TituloSecao>
+                <TituloSecao>Ação e histórico</TituloSecao>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FilaDeAcao />
+                  <AtividadeRecente />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <TituloSecao>Mais indicadores</TituloSecao>
                 <div className="grid gap-4 lg:grid-cols-2">
-                  <BarListChart
-                    titulo="Serviços mais vendidos (este mês)"
-                    dados={(insights.top_servicos ?? []).map((s) => ({
-                      label: s.nome,
-                      valor: s.faturamento,
-                      sublabel: `${s.qtd} serviço${s.qtd === 1 ? "" : "s"}`,
-                    }))}
-                    formatarValor={formatarMoeda}
-                    vazio="Sem serviços registrados este mês."
+                  <VeiculosResumoCard resumo={resumo} />
+                  <StatCard
+                    icon={Percent}
+                    titulo={`Desconto médio sobre a tabela (${periodo.label})`}
+                    valor={`${insights.desconto_medio?.percentual ?? 0}%`}
+                    tom={(insights.desconto_medio?.percentual ?? 0) > 15 ? "negativo" : undefined}
+                    legenda={`receita não realizada: ${formatarMoeda(insights.desconto_medio?.receita_nao_realizada ?? 0)}`}
                   />
                   <BarListChart
-                    titulo="Faturamento por porte (este mês)"
+                    titulo={`Clientes e receita por origem (${periodo.label})`}
+                    dados={(insights.por_origem ?? []).map((o) => ({
+                      label: o.origem,
+                      valor: o.receita,
+                      sublabel: `${o.qtd_clientes} cliente${o.qtd_clientes === 1 ? "" : "s"}`,
+                    }))}
+                    formatarValor={formatarMoeda}
+                    vazio="Sem clientes com serviços no período."
+                  />
+                  <BarListChart
+                    titulo={`Faturamento por porte (${periodo.label})`}
                     dados={(insights.faturamento_por_porte ?? []).map((p) => ({
                       label: PORTE_LABELS[p.porte as PorteVeiculo] ?? p.porte,
                       valor: p.faturamento,
                       sublabel: `${p.qtd_servicos} serviço${p.qtd_servicos === 1 ? "" : "s"}`,
                     }))}
                     formatarValor={formatarMoeda}
-                    vazio="Sem serviços com veículo este mês."
+                    vazio="Sem serviços com veículo no período."
                   />
-                </div>
-
-                {!unidadeSelecionadaId && (insights.comparativo_unidades ?? []).length > 1 && (
-                  <BarListChart
-                    titulo="Comparativo entre unidades (este mês)"
-                    dados={insights.comparativo_unidades.map((u) => ({
-                      label: u.unidade_nome,
-                      valor: u.faturamento,
-                      sublabel: `${u.qtd_servicos} serviço${u.qtd_servicos === 1 ? "" : "s"}`,
-                    }))}
+                  <DonutChart
+                    titulo={`Formas de pagamento (${periodo.label})`}
+                    dados={agruparTopCategorias(
+                      (insights.formas_pagamento ?? []).map((f) => ({
+                        label:
+                          f.forma_pagamento === "nao_informado"
+                            ? "Não informado"
+                            : FORMA_PAGAMENTO_LABELS[f.forma_pagamento as FormaPagamento],
+                        valor: f.faturamento,
+                      }))
+                    )}
                     formatarValor={formatarMoeda}
-                    vazio="Sem dados este mês."
+                    vazio="Sem pagamentos registrados no período."
+                    href="/financeiro"
+                    hrefLabel="Ver detalhamento financeiro"
                   />
-                )}
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <TituloSecao>Clientes</TituloSecao>
-                <div className="grid gap-4 lg:grid-cols-2">
                   <BarListChart
                     titulo="Ranking de clientes por valor gasto"
                     dados={(insights.top_clientes ?? []).map((c) => ({
@@ -272,6 +281,7 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
                   <NovosXRecorrentesCard
                     novos={insights.novos_x_recorrentes?.novos ?? 0}
                     recorrentes={insights.novos_x_recorrentes?.recorrentes ?? 0}
+                    periodoLabel={periodo.label}
                   />
                 </div>
               </div>
@@ -302,15 +312,10 @@ export function DashboardContent({ nomeUsuario }: { nomeUsuario: string }) {
               </CardContent>
             </Card>
           </div>
-        </div>
 
-        <aside className="order-1 flex flex-col gap-4 lg:order-2 lg:sticky lg:top-4 lg:self-start">
-          {!pronto ? (
-            <Skeleton className="h-64 w-full" />
-          ) : (
-            <InsightsPanel insights={gerarInsights(resumo, insights)} />
-          )}
-        </aside>
+        <p className="text-center text-xs text-muted-foreground">
+          Data de abertura da OS como referência para faturamento.
+        </p>
       </div>
     </div>
   );

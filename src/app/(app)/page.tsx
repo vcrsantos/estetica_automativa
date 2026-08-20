@@ -4,5 +4,7 @@ import { getCurrentUsuario } from "@/lib/auth/current-user";
 export default async function DashboardPage() {
   const usuario = await getCurrentUsuario();
 
-  return <DashboardContent nomeUsuario={usuario.nome} />;
+  return (
+    <DashboardContent nomeUsuario={usuario.nome} isAdmin={usuario.perfil === "administrador"} />
+  );
 }

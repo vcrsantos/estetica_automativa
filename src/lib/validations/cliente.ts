@@ -13,6 +13,14 @@ export const clienteSchema = z.object({
 
 export type ClienteFormValues = z.infer<typeof clienteSchema>;
 
+/**
+ * Lista fechada de origem (seção 4.10 do escopo de melhorias do dashboard)
+ * — precisa ser fechada pra dar pra analisar receita por canal de forma
+ * confiável. O schema continua aceitando string livre pra não quebrar
+ * cadastros antigos com texto digitado à mão.
+ */
+export const ORIGEM_OPCOES = ["Instagram", "Indicação", "Google", "Passante", "WhatsApp", "Outro"] as const;
+
 export const veiculoSchema = z.object({
   placa: z.string().optional().or(z.literal("")),
   marca: z.string().optional().or(z.literal("")),

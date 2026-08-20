@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
 import {
+  ORIGEM_OPCOES,
   PORTE_LABELS,
   clienteSchema,
   veiculoSchema,
@@ -111,6 +112,7 @@ export function NovoClientePage() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ClienteFormValues>({
     resolver: zodResolver(clienteSchema),
@@ -240,7 +242,28 @@ export function NovoClientePage() {
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="origem">Como conheceu a POLIBRILHO</Label>
-                <Input id="origem" placeholder="Instagram, indicação..." {...register("origem")} />
+                <Controller
+                  control={control}
+                  name="origem"
+                  render={({ field }) => (
+                    <Select
+                      items={Object.fromEntries(ORIGEM_OPCOES.map((o) => [o, o]))}
+                      value={field.value || undefined}
+                      onValueChange={(v) => field.onChange(v ?? "")}
+                    >
+                      <SelectTrigger id="origem" className="w-full">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ORIGEM_OPCOES.map((opcao) => (
+                          <SelectItem key={opcao} value={opcao}>
+                            {opcao}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
 
               <div className="flex flex-col gap-2 sm:col-span-2">
