@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -51,7 +51,7 @@ export function BarListChart({
           <p className="py-8 text-center text-sm text-muted-foreground">{vazio}</p>
         ) : (
           <ResponsiveContainer width="100%" height={Math.max(120, dados.length * 40)}>
-            <BarChart data={dados} layout="vertical" margin={{ top: 0, right: 16, bottom: 0, left: 0 }}>
+            <BarChart data={dados} layout="vertical" margin={{ top: 0, right: 56, bottom: 0, left: 0 }}>
               <XAxis type="number" hide />
               <YAxis
                 type="category"
@@ -69,6 +69,12 @@ export function BarListChart({
                 {dados.map((_, i) => (
                   <Cell key={i} fill="var(--chart-1)" />
                 ))}
+                <LabelList
+                  dataKey="valor"
+                  position="right"
+                  formatter={(valor) => formatarValor(Number(valor))}
+                  style={{ fill: "var(--foreground)", fontSize: 12, fontWeight: 600 }}
+                />
               </Bar>
             </BarChart>
           </ResponsiveContainer>

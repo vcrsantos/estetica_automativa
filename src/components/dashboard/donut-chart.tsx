@@ -34,6 +34,35 @@ function formatarPercentual(valor: number, total: number) {
   return `${Math.round((valor / total) * 100)}%`;
 }
 
+const RADIANO = Math.PI / 180;
+
+/** Rótulo de dado dentro da fatia — porcentagem (o valor em R$ já fica logo abaixo, na legenda); fatias muito finas (<6%) ficam sem rótulo pra não sobrepor texto. */
+function RotuloFatia({
+  cx = 0,
+  cy = 0,
+  midAngle = 0,
+  innerRadius = 0,
+  outerRadius = 0,
+  percent = 0,
+}: {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  percent?: number;
+}) {
+  if (percent < 0.06) return null;
+  const raio = innerRadius + (outerRadius - innerRadius) / 2;
+  const x = cx + raio * Math.cos(-midAngle * RADIANO);
+  const y = cy + raio * Math.sin(-midAngle * RADIANO);
+  return (
+    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700} fill="#101314">
+      {`${Math.round(percent * 100)}%`}
+    </text>
+  );
+}
+
 function TooltipConteudo({
   active,
   payload,
@@ -98,6 +127,8 @@ export function DonutChart({
                   paddingAngle={2}
                   stroke="var(--card)"
                   strokeWidth={2}
+                  label={RotuloFatia}
+                  labelLine={false}
                 >
                   {dados.map((_, i) => (
                     <Cell key={i} fill={CORES_DONUT[i % CORES_DONUT.length]} />

@@ -144,15 +144,15 @@ export function GraficoCombinado({
 
   return (
     <Card
-      className="gap-4 rounded-[8px] shadow-none"
+      className="rounded-[8px] shadow-none"
       style={{ background: cores.background, borderColor: cores.border }}
     >
-      <CardHeader className="px-5 pt-5">
+      <CardHeader>
         <CardTitle className="text-sm font-medium" style={{ color: cores.textPrimary }}>
           {titulo}
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-5 pb-5">
+      <CardContent>
         <ResponsiveContainer width="100%" height={240}>
           <ComposedChart data={pontos} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke={cores.grid} strokeWidth={1} />

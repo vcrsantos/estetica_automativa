@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const PALETA_CLARA = {
   background: "#FFFFFF",
   primary: "#F9C400",
-  progress: "#F28C00",
+  progress: "#F9C400",
   textPrimary: "#202020",
   textSecondary: "#666666",
   textMuted: "#969696",
@@ -28,7 +28,7 @@ const PALETA_CLARA = {
 const PALETA_ESCURA = {
   background: "#10161A",
   primary: "#FFD600",
-  progress: "#FF9500",
+  progress: "#FFD600",
   textPrimary: "#F7F7F5",
   textSecondary: "#A7ADB0",
   textMuted: "#7C8790",
@@ -58,22 +58,22 @@ function useCoresMetas() {
 }
 
 function AnelMeta({ percentual, cores }: { percentual: number; cores: typeof PALETA_CLARA }) {
-  const raio = 56;
+  const raio = 66;
   const circunferencia = 2 * Math.PI * raio;
   const preenchido = Math.min(100, Math.max(0, percentual));
   const offset = circunferencia * (1 - preenchido / 100);
 
   return (
-    <div className="relative flex size-[128px] shrink-0 items-center justify-center">
-      <svg viewBox="0 0 128 128" className="size-[128px] -rotate-90">
-        <circle cx="64" cy="64" r={raio} fill="none" stroke={cores.donutTrack} strokeWidth="10" />
+    <div className="relative flex size-[152px] shrink-0 items-center justify-center">
+      <svg viewBox="0 0 152 152" className="size-[152px] -rotate-90">
+        <circle cx="76" cy="76" r={raio} fill="none" stroke={cores.donutTrack} strokeWidth="11" />
         <circle
-          cx="64"
-          cy="64"
+          cx="76"
+          cy="76"
           r={raio}
           fill="none"
           stroke={cores.progress}
-          strokeWidth="10"
+          strokeWidth="11"
           strokeLinecap="round"
           strokeDasharray={circunferencia}
           strokeDashoffset={offset}
@@ -81,13 +81,13 @@ function AnelMeta({ percentual, cores }: { percentual: number; cores: typeof PAL
         />
       </svg>
       <div className="absolute flex flex-col items-center gap-1">
-        <Trophy className="size-6" style={{ color: cores.progress }} />
-        <span style={{ fontSize: 32, fontWeight: 700, color: cores.textPrimary }} className="tabular-nums">
+        <Trophy className="size-7" style={{ color: cores.progress }} />
+        <span style={{ fontSize: 36, fontWeight: 700, color: cores.textPrimary }} className="tabular-nums">
           {preenchido.toFixed(0)}%
         </span>
         <span
           className="text-center leading-tight"
-          style={{ fontSize: 12, fontWeight: 500, color: cores.support }}
+          style={{ fontSize: 13, fontWeight: 500, color: cores.support }}
         >
           da meta atingida
         </span>
@@ -113,7 +113,10 @@ function BarraMeta({
   return (
     <div className="flex flex-col gap-1">
       <span style={{ fontSize: 13, fontWeight: 400, color: cores.textSecondary }}>{titulo}</span>
-      <span style={{ fontSize: 18, fontWeight: 700, color: cores.textPrimary }} className="tabular-nums">
+      <span
+        style={{ fontSize: 18, fontWeight: 700, color: cores.textPrimary }}
+        className="tabular-nums whitespace-nowrap"
+      >
         {formatarValor(atual)} / {formatarValor(meta)}
       </span>
       <div className="mt-1 flex items-center gap-2">
@@ -155,15 +158,15 @@ export function MetasDoMesCard({ resumo }: { resumo: DashboardResumo }) {
   const metaVeiculos = capacidadeTotal * diasNoMes;
 
   const cardStyle = { background: cores.background, borderColor: cores.border };
-  const tituloStyle = { fontSize: 16, fontWeight: 700, color: cores.textPrimary };
+  const tituloStyle = { fontSize: 14, fontWeight: 500, color: cores.textPrimary };
 
   if (metaFaturamento <= 0 && metaVeiculos <= 0) {
     return (
-      <Card className="gap-4 rounded-[8px] shadow-none" style={cardStyle}>
-        <CardHeader className="px-5 pt-5">
+      <Card className="rounded-[8px] shadow-none" style={cardStyle}>
+        <CardHeader>
           <CardTitle style={tituloStyle}>Metas do mês</CardTitle>
         </CardHeader>
-        <CardContent className="px-5 pb-5">
+        <CardContent>
           <p className="py-6 text-center text-sm" style={{ color: cores.textMuted }}>
             Nenhuma meta configurada ainda. Abra uma unidade específica e use o botão de configuração
             no card de faturamento.
@@ -181,12 +184,12 @@ export function MetasDoMesCard({ resumo }: { resumo: DashboardResumo }) {
         : 0;
 
   return (
-    <Card className="gap-4 rounded-[8px] shadow-none" style={cardStyle}>
-      <CardHeader className="px-5 pt-5">
+    <Card className="rounded-[8px] shadow-none" style={cardStyle}>
+      <CardHeader>
         <CardTitle style={tituloStyle}>Metas do mês</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-wrap items-center gap-4 px-5 pb-5">
-        <div className="flex min-w-[180px] flex-1 flex-col gap-4">
+      <CardContent className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-[200px] flex-1 flex-col gap-4">
           {metaFaturamento > 0 && (
             <BarraMeta
               titulo="Faturamento"

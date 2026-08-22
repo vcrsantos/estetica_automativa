@@ -60,7 +60,7 @@ export function MetaFaturamentoCard({
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-black/10 text-[#101314]">
               <TrendingUp className="size-4.5" />
             </div>
-            <p className="text-sm text-[#101314]/70">Faturamento do mês</p>
+            <p className="text-sm font-medium text-[#101314]/70">Faturamento do mês</p>
           </div>
           {isAdmin && unidadeUnica && (
             <Button

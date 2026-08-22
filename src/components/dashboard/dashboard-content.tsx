@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Car, Percent, Plus, Receipt, RefreshCcw } from "lucide-react";
+import { Car, Percent, Plus, Receipt, RefreshCcw, Wallet } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { useUnidade } from "@/components/providers/unidade-provider";
@@ -128,8 +128,8 @@ export function DashboardContent({
       <div className="flex flex-col gap-6">
         {!pronto ? (
           <div className="flex flex-col gap-6">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-28 w-full" />
               ))}
             </div>
@@ -145,8 +145,16 @@ export function DashboardContent({
           </div>
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <MetaFaturamentoCard resumo={resumo} isAdmin={isAdmin} />
+                <StatCard
+                  icon={Wallet}
+                  titulo={`Faturamento (${periodo.label})`}
+                  valor={formatarMoeda(resumo.periodo.faturamento)}
+                  variacao={calcularVariacao(resumo.periodo.faturamento, resumo.periodo_anterior.faturamento)}
+                  formatarVariacaoValor={formatarMoeda}
+                  comparativoLabel="vs período anterior"
+                />
                 <StatCard
                   icon={Car}
                   titulo={`Veículos atendidos (${periodo.label})`}

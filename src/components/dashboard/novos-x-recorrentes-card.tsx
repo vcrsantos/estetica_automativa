@@ -32,10 +32,12 @@ export function NovosXRecorrentesCard({
               <span className="flex items-center gap-1.5">
                 <span className="size-2 rounded-full bg-chart-1" />
                 {novos} novo{novos === 1 ? "" : "s"}
+                <span className="text-muted-foreground">· {pctNovos.toFixed(0)}%</span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="size-2 rounded-full bg-chart-4" />
                 {recorrentes} recorrente{recorrentes === 1 ? "" : "s"}
+                <span className="text-muted-foreground">· {(100 - pctNovos).toFixed(0)}%</span>
               </span>
             </div>
           </>
