@@ -2,47 +2,89 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { Trophy } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { useUnidade } from "@/components/providers/unidade-provider";
 import type { DashboardResumo } from "@/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Design system fechado deste cartão ("Monthly Goals Card") — hex fixos
-// como no gráfico de faturamento/veículos, com um par claro/escuro pra se
-// reajustar sozinho no modo escuro (o par escuro reaproveita os tons
-// amarelo/laranja já usados no tema dark automotive do resto do dashboard).
+// Design system fechado deste cartão (card-metas-mensais-polibrilho.md),
+// com um par claro/escuro pra se reajustar sozinho no modo escuro — mesmo
+// padrão já usado nos demais gráficos/cartões com design system próprio
+// deste dashboard.
 const PALETA_CLARA = {
-  background: "#FFFFFF",
-  primary: "#F9C400",
-  progress: "#F9C400",
-  textPrimary: "#202020",
-  textSecondary: "#666666",
-  textMuted: "#969696",
-  support: "#555555",
-  track: "#E8E8E8",
-  donutTrack: "#E5E5E5",
-  border: "#EEEEEE",
+  background: "#fff9ec",
+  border: "rgba(0,0,0,0.06)",
+  titulo: "#6b665c",
+  textPrimary: "#292620",
+  textSecondary: "#777168",
+  textMuted: "#a7a097",
+  yellow: "#ffc400",
+  yellowDonut: "#ffbc32",
+  yellowSoft: "#fff0d4",
+  yellowDark: "#9a7100",
+  track: "#e1dacb",
+  donutTrack: "#e8e1d4",
+  marker: "#8b877f",
+  success: "#438451",
+  successBg: "#ecf8ef",
+  successBorder: "#b8dfc2",
+  belowBg: "#fff0d4",
+  belowBorder: "#e9c681",
+  belowText: "#c48a2c",
+  onTrackBg: "#f3f3f1",
+  onTrackBorder: "#d8d6d1",
+  onTrackText: "#66635d",
+  valorProjetado: "#c78a22",
 };
 
 const PALETA_ESCURA = {
-  background: "#10161A",
-  primary: "#FFD600",
-  progress: "#FFD600",
-  textPrimary: "#F7F7F5",
-  textSecondary: "#A7ADB0",
-  textMuted: "#7C8790",
-  support: "#A7ADB0",
+  background: "#10161a",
+  border: "#20282d",
+  titulo: "#a7ada0",
+  textPrimary: "#f7f7f5",
+  textSecondary: "#a7ada0",
+  textMuted: "#7c8790",
+  yellow: "#ffd600",
+  yellowDonut: "#ffc94d",
+  yellowSoft: "rgba(255,214,0,0.12)",
+  yellowDark: "#ffd600",
   track: "rgba(255,255,255,0.1)",
   donutTrack: "rgba(255,255,255,0.1)",
-  border: "#20282D",
+  marker: "rgba(255,255,255,0.45)",
+  success: "#5fce7c",
+  successBg: "rgba(95,206,124,0.12)",
+  successBorder: "rgba(95,206,124,0.35)",
+  belowBg: "rgba(255,214,0,0.1)",
+  belowBorder: "rgba(255,214,0,0.3)",
+  belowText: "#ffd600",
+  onTrackBg: "rgba(255,255,255,0.06)",
+  onTrackBorder: "rgba(255,255,255,0.15)",
+  onTrackText: "#a7ada0",
+  valorProjetado: "#ffd600",
 };
+
+type Cores = typeof PALETA_CLARA;
 
 function formatarMoeda(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function useCoresMetas() {
+function formatarPercentual(valor: number) {
+  return `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+}
+
+/** A Polibrilho atende de segunda a sábado — só domingo não conta como dia de operação pra ritmo/projeção e meta de veículos. */
+function contarDiasOperacao(ano: number, mes: number, ateDia?: number): number {
+  const ultimoDia = ateDia ?? new Date(ano, mes + 1, 0).getDate();
+  let contador = 0;
+  for (let dia = 1; dia <= ultimoDia; dia++) {
+    if (new Date(ano, mes, dia).getDay() !== 0) contador++;
+  }
+  return contador;
+}
+
+function useCoresMetas(): Cores {
   const { resolvedTheme } = useTheme();
   const [montado, setMontado] = React.useState(false);
 
@@ -57,91 +99,115 @@ function useCoresMetas() {
   return montado && resolvedTheme === "dark" ? PALETA_ESCURA : PALETA_CLARA;
 }
 
-function AnelMeta({ percentual, cores }: { percentual: number; cores: typeof PALETA_CLARA }) {
-  const raio = 66;
+function DonutMeta({ percentual, cores }: { percentual: number; cores: Cores }) {
+  const raio = 47;
   const circunferencia = 2 * Math.PI * raio;
   const preenchido = Math.min(100, Math.max(0, percentual));
   const offset = circunferencia * (1 - preenchido / 100);
 
   return (
-    <div className="relative flex size-[152px] shrink-0 items-center justify-center">
-      <svg viewBox="0 0 152 152" className="size-[152px] -rotate-90">
-        <circle cx="76" cy="76" r={raio} fill="none" stroke={cores.donutTrack} strokeWidth="11" />
+    <div className="relative flex size-[110px] shrink-0 items-center justify-center">
+      <svg viewBox="0 0 110 110" className="size-[110px] -rotate-90">
+        <circle cx="55" cy="55" r={raio} fill="none" stroke={cores.donutTrack} strokeWidth="10" />
         <circle
-          cx="76"
-          cy="76"
+          cx="55"
+          cy="55"
           r={raio}
           fill="none"
-          stroke={cores.progress}
-          strokeWidth="11"
+          stroke={cores.yellowDonut}
+          strokeWidth="10"
           strokeLinecap="round"
           strokeDasharray={circunferencia}
           strokeDashoffset={offset}
           className="transition-[stroke-dashoffset] duration-500"
         />
       </svg>
-      <div className="absolute flex flex-col items-center gap-1">
-        <Trophy className="size-7" style={{ color: cores.progress }} />
-        <span style={{ fontSize: 36, fontWeight: 700, color: cores.textPrimary }} className="tabular-nums">
-          {preenchido.toFixed(0)}%
+      <div className="absolute flex flex-col items-center">
+        <span style={{ fontSize: 28, fontWeight: 700, color: cores.textPrimary }} className="tabular-nums">
+          {formatarPercentual(percentual)}
         </span>
         <span
-          className="text-center leading-tight"
-          style={{ fontSize: 13, fontWeight: 500, color: cores.support }}
+          className="mt-0.5 uppercase"
+          style={{ fontSize: 10, fontWeight: 500, color: cores.textMuted, letterSpacing: "0.08em" }}
         >
-          da meta atingida
+          da meta
         </span>
       </div>
     </div>
   );
 }
 
-function BarraMeta({
+type StatusProjecao = "above" | "on-track" | "below";
+
+function BadgeStatus({ status, cores }: { status: StatusProjecao; cores: Cores }) {
+  const config: Record<StatusProjecao, { label: string; bg: string; border: string; texto: string }> = {
+    above: { label: "Projeção acima do alvo", bg: cores.successBg, border: cores.successBorder, texto: cores.success },
+    "on-track": {
+      label: "Projeção dentro do esperado",
+      bg: cores.onTrackBg,
+      border: cores.onTrackBorder,
+      texto: cores.onTrackText,
+    },
+    below: { label: "Projeção abaixo do alvo", bg: cores.belowBg, border: cores.belowBorder, texto: cores.belowText },
+  };
+  const c = config[status];
+
+  return (
+    <span
+      className="mt-2 inline-flex h-[26px] w-fit items-center rounded-full px-3"
+      style={{ backgroundColor: c.bg, border: `1px solid ${c.border}`, color: c.texto, fontSize: 11, fontWeight: 500 }}
+    >
+      {c.label}
+    </span>
+  );
+}
+
+function BarraComMarcador({
   titulo,
   atual,
   meta,
+  progressoEsperado,
   formatarValor,
   cores,
 }: {
   titulo: string;
   atual: number;
   meta: number;
+  progressoEsperado: number;
   formatarValor: (v: number) => string;
-  cores: typeof PALETA_CLARA;
+  cores: Cores;
 }) {
   const percentual = meta > 0 ? Math.min(100, (atual / meta) * 100) : 0;
   return (
-    <div className="flex flex-col gap-1">
-      <span style={{ fontSize: 13, fontWeight: 400, color: cores.textSecondary }}>{titulo}</span>
-      <span
-        style={{ fontSize: 18, fontWeight: 700, color: cores.textPrimary }}
-        className="tabular-nums whitespace-nowrap"
-      >
-        {formatarValor(atual)} / {formatarValor(meta)}
-      </span>
-      <div className="mt-1 flex items-center gap-2">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ backgroundColor: cores.track }}>
-          <div
-            className="h-full rounded-full transition-all"
-            style={{ width: `${percentual}%`, backgroundColor: cores.progress }}
-          />
-        </div>
-        <span
-          className="w-9 shrink-0 text-right tabular-nums"
-          style={{ fontSize: 12.5, fontWeight: 600, color: cores.textSecondary }}
-        >
-          {percentual.toFixed(0)}%
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between">
+        <span style={{ fontSize: 12, color: cores.textSecondary }}>{titulo}</span>
+        <span className="tabular-nums whitespace-nowrap" style={{ fontSize: 13 }}>
+          <span style={{ fontWeight: 700, color: cores.textPrimary }}>{formatarValor(atual)}</span>
+          <span style={{ fontWeight: 400, color: cores.textMuted }}> / {formatarValor(meta)}</span>
         </span>
+      </div>
+      <div className="relative h-[9px] w-full overflow-hidden rounded-full" style={{ backgroundColor: cores.track }}>
+        <div
+          className="h-full rounded-full transition-[width] duration-350 ease-out"
+          style={{ width: `${Math.max(percentual, percentual > 0 ? 1.5 : 0)}%`, backgroundColor: cores.yellow }}
+        />
+        <div
+          className="absolute top-1/2 h-[10px] w-[2px] -translate-y-1/2 opacity-80"
+          style={{ left: `${Math.min(100, progressoEsperado)}%`, backgroundColor: cores.marker }}
+          title={`Hoje você deveria estar em ${formatarPercentual(progressoEsperado)} da meta.`}
+        />
       </div>
     </div>
   );
 }
 
 /**
- * Metas do mês (seção 4.1/4.8 do escopo de melhorias) — faturamento usa a
- * meta configurada por unidade; veículos deriva a meta da capacidade
- * diária × dias do mês (não existe um campo de meta de veículos à parte,
- * pra não duplicar configuração).
+ * Metas do mês (card-metas-mensais-polibrilho.md) — faturamento usa a meta
+ * configurada por unidade; veículos deriva a meta da capacidade diária ×
+ * dias de operação do mês. A Polibrilho atende de segunda a sábado, então
+ * "dia de operação" aqui exclui só domingo (não é o "dia útil" seg-sex
+ * genérico do documento original).
  */
 export function MetasDoMesCard({ resumo }: { resumo: DashboardResumo }) {
   const { unidades, unidadeSelecionadaId } = useUnidade();
@@ -154,17 +220,25 @@ export function MetasDoMesCard({ resumo }: { resumo: DashboardResumo }) {
   const capacidadeTotal = unidadesConsideradas.reduce((acc, u) => acc + (u.capacidade_dia ?? 0), 0);
 
   const hoje = new Date();
-  const diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
-  const metaVeiculos = capacidadeTotal * diasNoMes;
+  const ano = hoje.getFullYear();
+  const mes = hoje.getMonth();
+  const diaAtual = hoje.getDate();
+  const mesLabel = hoje.toLocaleDateString("pt-BR", { month: "long" });
+
+  const diasOperacaoTotal = contarDiasOperacao(ano, mes);
+  const diasOperacaoDecorridos = Math.min(diasOperacaoTotal, contarDiasOperacao(ano, mes, diaAtual));
+  const diasOperacaoRestantes = Math.max(0, diasOperacaoTotal - diasOperacaoDecorridos);
+
+  const metaVeiculos = capacidadeTotal * diasOperacaoTotal;
 
   const cardStyle = { background: cores.background, borderColor: cores.border };
-  const tituloStyle = { fontSize: 14, fontWeight: 500, color: cores.textPrimary };
+  const tituloStyle = { fontSize: 16, fontWeight: 700, color: cores.titulo };
 
   if (metaFaturamento <= 0 && metaVeiculos <= 0) {
     return (
-      <Card className="rounded-[8px] shadow-none" style={cardStyle}>
+      <Card className="rounded-[18px] shadow-none" style={cardStyle}>
         <CardHeader>
-          <CardTitle style={tituloStyle}>Metas do mês</CardTitle>
+          <CardTitle style={tituloStyle}>Metas de {mesLabel}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="py-6 text-center text-sm" style={{ color: cores.textMuted }}>
@@ -176,40 +250,78 @@ export function MetasDoMesCard({ resumo }: { resumo: DashboardResumo }) {
     );
   }
 
-  const percentualPrincipal =
-    metaFaturamento > 0
-      ? (resumo.mes.faturamento / metaFaturamento) * 100
-      : metaVeiculos > 0
-        ? (resumo.mes.qtd_servicos / metaVeiculos) * 100
-        : 0;
+  const faturamentoAtual = resumo.mes.faturamento;
+  const veiculosAtual = resumo.mes.qtd_servicos;
+
+  const percentualMeta = metaFaturamento > 0 ? (faturamentoAtual / metaFaturamento) * 100 : 0;
+  const progressoEsperado = diasOperacaoTotal > 0 ? (diasOperacaoDecorridos / diasOperacaoTotal) * 100 : 0;
+
+  const projecaoFaturamento =
+    diasOperacaoDecorridos > 0 ? (faturamentoAtual / diasOperacaoDecorridos) * diasOperacaoTotal : 0;
+  const percentualProjetado = metaFaturamento > 0 ? (projecaoFaturamento / metaFaturamento) * 100 : 0;
+
+  const valorRestante = Math.max(0, metaFaturamento - faturamentoAtual);
+  const metaJaAtingida = metaFaturamento > 0 && faturamentoAtual >= metaFaturamento;
+  const ritmoNecessario = diasOperacaoRestantes > 0 ? valorRestante / diasOperacaoRestantes : 0;
+
+  const status: StatusProjecao =
+    percentualProjetado >= 100 ? "above" : percentualProjetado >= 90 ? "on-track" : "below";
 
   return (
-    <Card className="rounded-[8px] shadow-none" style={cardStyle}>
+    <Card className="rounded-[18px] shadow-none" style={cardStyle}>
       <CardHeader>
-        <CardTitle style={tituloStyle}>Metas do mês</CardTitle>
+        <CardTitle style={tituloStyle}>Metas de {mesLabel}</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex min-w-[200px] flex-1 flex-col gap-4">
+      <CardContent className="flex flex-col gap-5">
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+          <DonutMeta percentual={percentualMeta} cores={cores} />
+          <div className="flex flex-col items-center sm:items-start">
+            <p className="text-center sm:text-left" style={{ fontSize: 13, color: cores.textSecondary }}>
+              No ritmo atual, {mesLabel} fecha em{" "}
+              <span style={{ fontWeight: 700, color: cores.valorProjetado }}>
+                {formatarMoeda(projecaoFaturamento)}
+              </span>{" "}
+              — <span style={{ color: cores.textMuted }}>{formatarPercentual(percentualProjetado)} da meta</span>.
+            </p>
+            <BadgeStatus status={status} cores={cores} />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
           {metaFaturamento > 0 && (
-            <BarraMeta
+            <BarraComMarcador
               titulo="Faturamento"
-              atual={resumo.mes.faturamento}
+              atual={faturamentoAtual}
               meta={metaFaturamento}
+              progressoEsperado={progressoEsperado}
               formatarValor={formatarMoeda}
               cores={cores}
             />
           )}
           {metaVeiculos > 0 && (
-            <BarraMeta
+            <BarraComMarcador
               titulo="Veículos"
-              atual={resumo.mes.qtd_servicos}
+              atual={veiculosAtual}
               meta={metaVeiculos}
+              progressoEsperado={progressoEsperado}
               formatarValor={(v) => String(Math.round(v))}
               cores={cores}
             />
           )}
         </div>
-        <AnelMeta percentual={percentualPrincipal} cores={cores} />
+
+        <div className={cn("flex flex-col")} style={{ borderTop: `1px solid ${cores.border}`, paddingTop: 16 }}>
+          <div className="flex items-center justify-between">
+            <span style={{ fontSize: 13, color: cores.textSecondary }}>Ritmo necessário por dia</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: metaJaAtingida ? cores.success : cores.yellowDark }}>
+              {metaJaAtingida ? "Meta mensal atingida" : formatarMoeda(ritmoNecessario)}
+            </span>
+          </div>
+          <p className="mt-2" style={{ fontSize: 11, color: cores.textMuted }}>
+            A marca cinza nas barras mostra onde você deveria estar hoje ({formatarPercentual(progressoEsperado)} do
+            mês).
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

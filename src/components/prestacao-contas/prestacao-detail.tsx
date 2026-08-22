@@ -8,13 +8,12 @@ import { Ban, CheckCircle2, Download, Loader2, MessageCircle, Receipt } from "lu
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
 import { linkWhatsApp } from "@/lib/whatsapp";
 import { PORTE_LABELS } from "@/lib/validations/cliente";
 import { PrestacaoPdf } from "@/components/prestacao-contas/prestacao-pdf";
 import { ConfirmarPagamentoDialog } from "@/components/prestacao-contas/confirmar-pagamento-dialog";
 import { CancelarPrestacaoDialog } from "@/components/prestacao-contas/cancelar-prestacao-dialog";
-import type { ConfiguracaoEmitente, PrestacaoConta, PrestacaoContaItem, PrestacaoStatus } from "@/types/database";
+import type { PrestacaoConta, PrestacaoContaItem, PrestacaoStatus } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -88,23 +87,10 @@ export function PrestacaoDetail({
   const vencida =
     prestacao.status === "aberto" && !!prestacao.data_vencimento && prestacao.data_vencimento < hojeIso();
 
-  async function buscarEmitente(): Promise<ConfiguracaoEmitente | null> {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("configuracao_emitente")
-      .select("*")
-      .eq("unidade_id", prestacao.unidade_id)
-      .maybeSingle();
-    return data;
-  }
-
   async function baixarPdf() {
     setGerandoPdf(true);
     try {
-      const emitente = await buscarEmitente();
-      const blob = await pdf(
-        <PrestacaoPdf prestacao={prestacao} itens={itens} emitente={emitente} />
-      ).toBlob();
+      const blob = await pdf(<PrestacaoPdf prestacao={prestacao} itens={itens} />).toBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
