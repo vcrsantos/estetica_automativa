@@ -157,21 +157,35 @@
   }
 }
 
-@keyframes faixa-insights {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+/* Numerais tabulares (seção 4.11 das melhorias) — evita que os dígitos
+   "dancem" horizontalmente ao trocar de período; equivalente nomeado à
+   utilidade `tabular-nums` do Tailwind já usada nos valores numéricos. */
+.num {
+  font-variant-numeric: tabular-nums;
 }
 
-.animate-faixa-insights {
-  animation: faixa-insights 35s linear infinite;
+/* Foco visível (seção 4.12): todo elemento navegável por teclado ganha um
+   contorno amarelo de 2px, sem depender de cada componente declarar o
+   próprio estilo de foco. */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #ffc400;
+  outline-offset: 2px;
+}
+.dark a:focus-visible,
+.dark button:focus-visible,
+.dark [tabindex]:focus-visible {
+  outline-color: #ffd600;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-faixa-insights {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

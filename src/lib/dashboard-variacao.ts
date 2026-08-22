@@ -17,13 +17,29 @@ export function calcularVariacao(atual: number, anterior: number): Variacao {
   return { estado: "percentual", absoluta, percentual: (absoluta / anterior) * 100 };
 }
 
+export type InfoVariacao = { texto: string; tom: "positivo" | "negativo" | "neutro"; indisponivel?: boolean };
+
+/**
+ * Nunca esconde o indicador em silêncio (seção 4.2 das melhorias): quando não
+ * há base de comparação, mostra uma frase explicando o motivo em vez de
+ * omitir a linha inteira ou exibir um "——" sem contexto. `contexto` deixa a
+ * frase específica pro card ("mês" no card de Faturamento do mês, "período"
+ * nos demais KPIs presos ao seletor de período global).
+ */
 export function formatarVariacao(
   variacao: Variacao,
-  formatarValor: (v: number) => string
-): { texto: string; tom: "positivo" | "negativo" | "neutro" } | null {
-  if (variacao.estado === "sem-dado") return null;
+  formatarValor: (v: number) => string,
+  contexto: string = "período"
+): InfoVariacao {
+  if (variacao.estado === "sem-dado") {
+    return { texto: `Sem ${contexto} anterior para comparar`, tom: "neutro", indisponivel: true };
+  }
   if (variacao.estado === "primeiro-registro") {
-    return { texto: "——", tom: "neutro" };
+    return {
+      texto: `${contexto.charAt(0).toUpperCase()}${contexto.slice(1)} anterior zerado`,
+      tom: "neutro",
+      indisponivel: true,
+    };
   }
   const sinal = variacao.absoluta >= 0 ? "+" : "";
   return {

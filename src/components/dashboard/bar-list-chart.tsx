@@ -50,7 +50,12 @@ export function BarListChart({
         {dados.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">{vazio}</p>
         ) : (
-          <ResponsiveContainer width="100%" height={Math.max(120, dados.length * 40)}>
+          <ResponsiveContainer
+            width="100%"
+            height={Math.max(120, dados.length * 40)}
+            role="img"
+            aria-label={titulo}
+          >
             <BarChart data={dados} layout="vertical" margin={{ top: 0, right: 56, bottom: 0, left: 0 }}>
               <XAxis type="number" hide />
               <YAxis

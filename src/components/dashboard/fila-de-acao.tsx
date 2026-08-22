@@ -2,15 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { linkWhatsApp } from "@/lib/whatsapp";
 import { montarMensagemReativacao } from "@/lib/reativacao-mensagens";
 import { useUnidade } from "@/components/providers/unidade-provider";
+import { cn } from "@/lib/utils";
 import type { Cliente, ClienteParaReativar, Orcamento } from "@/types/database";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const LIMITE = 4;
@@ -19,13 +18,33 @@ function formatarMoeda(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function iniciais(nome: string) {
+  const partes = nome.trim().split(/\s+/);
+  const primeira = partes[0]?.[0] ?? "";
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (primeira + ultima).toUpperCase();
+}
+
 function diasDesde(dataIso: string) {
   return Math.floor((Date.now() - new Date(dataIso).getTime()) / 86400000);
 }
 
 type OrcamentoPendente = Orcamento & { cliente: Cliente | null };
 
-/** Fila de ação (seção 3.6 do escopo de melhorias): clientes a reativar e orçamentos sem resposta, cada linha com botão de WhatsApp e mensagem pré-preenchida. */
+type ItemFila =
+  | { id: string; tipo: "reativar"; nome: string; descricao: string; acaoLabel: string; disabled: boolean; onAcao: () => void }
+  | {
+      id: string;
+      tipo: "orcamento";
+      nome: string;
+      descricao: string;
+      valor: number;
+      acaoLabel: string;
+      disabled: boolean;
+      onAcao: () => void;
+    };
+
+/** Fila de ação (seção 3.6 do escopo de melhorias): clientes a reativar e orçamentos sem resposta numa única lista, cada linha com a ação de WhatsApp já pré-preenchida. */
 export function FilaDeAcao() {
   const { unidadeSelecionadaId } = useUnidade();
   const [clientes, setClientes] = React.useState<ClienteParaReativar[]>([]);
@@ -96,100 +115,78 @@ export function FilaDeAcao() {
     window.open(linkWhatsApp(telefone, mensagem), "_blank", "noopener,noreferrer");
   }
 
-  const semNada = !carregando && clientes.length === 0 && orcamentos.length === 0;
+  const itens: ItemFila[] = [
+    ...clientes.map(
+      (cliente): ItemFila => ({
+        id: `cliente-${cliente.cliente_id}`,
+        tipo: "reativar",
+        nome: cliente.nome,
+        descricao: `Sem serviço há ${cliente.dias_desde_ultimo} dias · ${formatarMoeda(cliente.valor_total_gasto)}`,
+        acaoLabel: "Reativar",
+        disabled: !cliente.telefone,
+        onAcao: () => contatarCliente(cliente),
+      })
+    ),
+    ...orcamentos.map(
+      (orcamento): ItemFila => ({
+        id: `orcamento-${orcamento.id}`,
+        tipo: "orcamento",
+        nome: orcamento.contato_nome || orcamento.cliente?.nome || `Orçamento #${orcamento.numero}`,
+        descricao: `Orçamento enviado há ${diasDesde(orcamento.criado_em)} dias, sem resposta`,
+        valor: orcamento.valor_total,
+        acaoLabel: "Cobrar retorno",
+        disabled: !(orcamento.contato_telefone || orcamento.cliente?.telefone),
+        onAcao: () => contatarOrcamento(orcamento),
+      })
+    ),
+  ].slice(0, LIMITE);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="gap-0">
+      <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium text-foreground">Fila de ação</CardTitle>
+        <CardAction>
+          <Link href="/reativacao" className="text-xs font-medium text-primary hover:underline">
+            Ver tudo
+          </Link>
+        </CardAction>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {carregando && (
-          <div className="flex flex-col gap-2">
+      <CardContent className="p-0">
+        {carregando ? (
+          <div className="flex flex-col gap-2 p-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
-        )}
-
-        {semNada && (
-          <p className="py-6 text-center text-sm text-muted-foreground">Nada pendente por aqui.</p>
-        )}
-
-        {!carregando && clientes.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                Clientes a reativar
-              </p>
-              <Link href="/reativacao" className="text-xs font-medium text-primary hover:underline">
-                Ver todos
-              </Link>
-            </div>
-            {clientes.map((cliente) => (
-              <div
-                key={cliente.cliente_id}
-                className="flex items-center justify-between gap-2 rounded-md border p-2"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{cliente.nome}</p>
-                  <p className="text-xs text-muted-foreground">
-                    há {cliente.dias_desde_ultimo} dias · {formatarMoeda(cliente.valor_total_gasto)}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="Chamar no WhatsApp"
-                  disabled={!cliente.telefone}
-                  onClick={() => contatarCliente(cliente)}
-                >
-                  <MessageCircle className="size-4" />
-                </Button>
+        ) : itens.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nada pendente por aqui.</p>
+        ) : (
+          itens.map((item, i) => (
+            <button
+              type="button"
+              key={item.id}
+              onClick={item.onAcao}
+              disabled={item.disabled}
+              className={cn(
+                "flex w-full items-center gap-3 border-border px-4 py-3 text-left transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50",
+                i < itens.length - 1 && "border-b"
+              )}
+            >
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-semibold text-muted-foreground">
+                {iniciais(item.nome)}
               </div>
-            ))}
-          </div>
-        )}
-
-        {!carregando && orcamentos.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                Orçamentos sem resposta
-              </p>
-              <Link href="/orcamentos" className="text-xs font-medium text-primary hover:underline">
-                Ver todos
-              </Link>
-            </div>
-            {orcamentos.map((orcamento) => (
-              <Link
-                key={orcamento.id}
-                href={`/orcamentos/${orcamento.id}`}
-                className="flex items-center justify-between gap-2 rounded-md border p-2 transition-colors hover:bg-accent"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">
-                    {orcamento.contato_nome || orcamento.cliente?.nome || `Orçamento #${orcamento.numero}`}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    há {diasDesde(orcamento.criado_em)} dias · {formatarMoeda(orcamento.valor_total)}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="Chamar no WhatsApp"
-                  disabled={!(orcamento.contato_telefone || orcamento.cliente?.telefone)}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    contatarOrcamento(orcamento);
-                  }}
-                >
-                  <MessageCircle className="size-4" />
-                </Button>
-              </Link>
-            ))}
-          </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-foreground">{item.nome}</p>
+                <p className="truncate text-xs text-muted-foreground">{item.descricao}</p>
+              </div>
+              <div className="shrink-0 text-right">
+                {item.tipo === "orcamento" && (
+                  <p className="text-sm font-semibold tabular-nums text-foreground">{formatarMoeda(item.valor)}</p>
+                )}
+                <p className="text-xs font-medium text-muted-foreground">{item.acaoLabel}</p>
+              </div>
+            </button>
+          ))
         )}
       </CardContent>
     </Card>

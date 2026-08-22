@@ -25,6 +25,9 @@ const PALETA_CLARA = {
   textMuted: "#999999",
   grid: "#E7E7E7",
   border: "#ECECEC",
+  avisoBg: "rgba(249, 196, 0, 0.13)",
+  avisoBorder: "rgba(249, 196, 0, 0.22)",
+  avisoTexto: "#8A6A00",
 };
 
 const PALETA_ESCURA = {
@@ -37,6 +40,9 @@ const PALETA_ESCURA = {
   textMuted: "#7C8790",
   grid: "#20282D",
   border: "#20282D",
+  avisoBg: "rgba(255, 214, 0, 0.1)",
+  avisoBorder: "rgba(255, 214, 0, 0.3)",
+  avisoTexto: "#FFD600",
 };
 
 function formatarMoeda(valor: number) {
@@ -73,6 +79,7 @@ function TooltipConteudo({
 }) {
   if (!active || !payload?.length) return null;
   const item = payload[0].payload;
+  const ticketMedio = item.qtd_servicos > 0 ? formatarMoeda(item.faturamento / item.qtd_servicos) : "—";
   return (
     <div
       className="rounded-md px-3 py-2 text-sm shadow-md"
@@ -86,7 +93,7 @@ function TooltipConteudo({
         média 7d: {formatarMoeda(item.mediaMovel)}
       </p>
       <p className="text-xs" style={{ color: cores.textMuted }}>
-        {item.qtd_servicos} veículo{item.qtd_servicos === 1 ? "" : "s"}
+        {item.qtd_servicos} veículo{item.qtd_servicos === 1 ? "" : "s"} · ticket médio: {ticketMedio}
       </p>
     </div>
   );
@@ -119,7 +126,10 @@ function ItemLegenda({
   );
 }
 
-/** Gráfico combinado (seção 3.4 do escopo de melhorias): faturamento em barras, veículos/dia em linha sobre um eixo secundário e média móvel de 7 dias tracejada — substitui os dois gráficos separados de antes. */
+type PropsFormaBarra = { x?: number; y?: number; width?: number; height?: number; payload?: Ponto };
+type PropsPontoLinha = { cx?: number; cy?: number; payload?: Ponto };
+
+/** Gráfico combinado (seção 3.4 do escopo original, refinado pela seção 4.5 das melhorias): faturamento em barras, veículos/dia em linha sobre um eixo secundário e média móvel de 7 dias tracejada quando há dados suficientes para significar algo. */
 export function GraficoCombinado({
   dados,
   titulo = "Faturamento e veículos",
@@ -142,6 +152,10 @@ export function GraficoCombinado({
   const escuro = montado && resolvedTheme === "dark";
   const cores = escuro ? PALETA_ESCURA : PALETA_CLARA;
 
+  const diasComVenda = pontos.filter((p) => p.faturamento > 0).length;
+  const diasZerados = pontos.length - diasComVenda;
+  const mostrarMediaMovel = diasComVenda >= 5;
+
   return (
     <Card
       className="rounded-[8px] shadow-none"
@@ -153,7 +167,12 @@ export function GraficoCombinado({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer
+          width="100%"
+          height={240}
+          role="img"
+          aria-label={`Gráfico de faturamento diário e veículos atendidos, ${titulo}`}
+        >
           <ComposedChart data={pontos} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke={cores.grid} strokeWidth={1} />
             <XAxis
@@ -184,23 +203,58 @@ export function GraficoCombinado({
               label={{ value: "Veículos", position: "top", offset: 12, fill: cores.textMuted, fontSize: 11 }}
             />
             <Tooltip cursor={{ fill: cores.grid, opacity: 0.4 }} content={<TooltipConteudo cores={cores} />} />
-            <Bar yAxisId="faturamento" dataKey="faturamento" fill={cores.primary} radius={[3, 3, 0, 0]} maxBarSize={22} />
-            <Line
+            <Bar
               yAxisId="faturamento"
-              type="monotone"
-              dataKey="mediaMovel"
-              stroke={cores.trend}
-              strokeWidth={2}
-              strokeDasharray="4 4"
-              dot={false}
+              dataKey="faturamento"
+              maxBarSize={22}
+              shape={(props) => {
+                // Em dias sem nenhum lançamento, desenha um traço de 3px na
+                // linha de base em vez de altura zero: o dia existe e está
+                // vazio, diferente de um espaço em branco ambíguo (seção
+                // 4.5 das melhorias).
+                const { x = 0, y = 0, width = 0, height = 0, payload } = props as PropsFormaBarra;
+                if (payload && payload.faturamento === 0) {
+                  return <rect x={x} y={y - 3} width={width} height={3} rx={1.5} fill={cores.grid} />;
+                }
+                return <rect x={x} y={y} width={width} height={height} rx={3} ry={3} fill={cores.primary} />;
+              }}
             />
+            {mostrarMediaMovel && (
+              <Line
+                yAxisId="faturamento"
+                type="linear"
+                dataKey="mediaMovel"
+                stroke={cores.trend}
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                dot={false}
+              />
+            )}
             <Line
               yAxisId="veiculos"
-              type="monotone"
+              type="linear"
               dataKey="qtd_servicos"
               stroke={cores.dataDark}
               strokeWidth={2}
-              dot={{ r: 2, fill: cores.primary, stroke: cores.dataDark, strokeWidth: 1.5 }}
+              dot={(props) => {
+                // Ponto só aparece em dias com atendimento — em dia zerado
+                // sugeriria um dado que não foi coletado (seção 4.5).
+                const { cx, cy, payload } = props as PropsPontoLinha;
+                if (!payload || payload.qtd_servicos === 0 || cx == null || cy == null) {
+                  return null;
+                }
+                return (
+                  <circle
+                    key={payload.dia}
+                    cx={cx}
+                    cy={cy}
+                    r={2}
+                    fill={cores.primary}
+                    stroke={cores.dataDark}
+                    strokeWidth={1.5}
+                  />
+                );
+              }}
               activeDot={{ r: 3, fill: cores.primary, stroke: cores.dataDark, strokeWidth: 1.5 }}
             />
           </ComposedChart>
@@ -208,9 +262,21 @@ export function GraficoCombinado({
 
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
           <ItemLegenda cor={cores.primary} label="Faturamento" corTexto={cores.textSecondary} />
-          <ItemLegenda cor={cores.trend} label="Média móvel (7 dias)" corTexto={cores.textSecondary} tracejado />
+          {mostrarMediaMovel && (
+            <ItemLegenda cor={cores.trend} label="Média móvel (7 dias)" corTexto={cores.textSecondary} tracejado />
+          )}
           <ItemLegenda cor={cores.dataDark} label="Veículos" corTexto={cores.textSecondary} />
         </div>
+
+        {diasZerados > 0 && (
+          <p
+            className="mt-3 rounded-md px-3 py-2 text-xs"
+            style={{ background: cores.avisoBg, border: `1px solid ${cores.avisoBorder}`, color: cores.avisoTexto }}
+          >
+            {diasZerados} de {pontos.length} dias sem faturamento lançado. Confira se as OS estão sendo
+            registradas no sistema.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

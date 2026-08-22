@@ -25,8 +25,10 @@ export type Unidade = {
   criado_em: string;
   /** Meta de faturamento do mês, em R$. Nulo = meta não configurada (some do dashboard). */
   meta_mensal: number | null;
-  /** Quantos veículos a unidade comporta por dia. Nulo = ocupação não configurada (some do dashboard). */
+  /** Quantos automóveis a unidade comporta por dia. Nulo = ocupação não configurada (some do dashboard). */
   capacidade_dia: number | null;
+  /** Quantas motos a unidade comporta por dia. Nulo = meta de moto não configurada (some do dashboard). */
+  capacidade_dia_moto: number | null;
 };
 
 export type Usuario = {
@@ -377,6 +379,12 @@ export type DashboardResumo = {
   orcamentos_aguardando: number;
   clientes_inativos: number;
   contas_a_receber: number;
+  /** Fração de `periodo.faturamento` sem pendência vencida no momento (seção 4.9 das melhorias). */
+  valor_recebido_em_dia: number;
+  /** Veículos atendidos no mês corrente com veículo vinculado de porte pequeno/médio/grande. */
+  mes_veiculos_automovel: number;
+  /** Veículos atendidos no mês corrente com veículo vinculado de porte moto. */
+  mes_veiculos_moto: number;
 };
 
 export type DashboardInsights = {
@@ -396,6 +404,8 @@ export type DashboardInsights = {
     taxa_retorno_90d: number;
     taxa_retorno_90d_anterior: number;
     intervalo_medio_dias: number | null;
+    /** Clientes distintos com pelo menos 1 atendimento na janela de 90 dias — usado pra sinalizar base pequena demais pra o % significar algo. */
+    clientes_base: number;
   };
   desconto_medio: { percentual: number; receita_nao_realizada: number };
   por_origem: { origem: string; qtd_clientes: number; receita: number }[];

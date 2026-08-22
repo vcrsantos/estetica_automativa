@@ -16,6 +16,8 @@ export function StatCard({
   tom,
   icon: Icon,
   destaque,
+  size = "default",
+  legendaTom,
   href,
   hrefLabel = "Ver detalhes",
 }: {
@@ -34,13 +36,17 @@ export function StatCard({
   icon?: ComponentType<{ className?: string }>;
   /** Destaca o card com um acento dourado — usado nos KPIs de faturamento para diferenciar de indicadores operacionais. */
   destaque?: boolean;
+  /** "hero" aumenta o valor pra dar peso visual — reservado ao KPI principal da linha (seção 4.1 das melhorias). */
+  size?: "hero" | "default";
+  /** Colore a pílula da legenda — use "negativo" pra chamar atenção (ex.: valor pendente vencido). */
+  legendaTom?: "negativo";
   href?: string;
   hrefLabel?: string;
 }) {
   const infoVariacao = variacao ? formatarVariacao(variacao, formatarVariacaoValor) : null;
 
   return (
-    <Card className={cn(destaque && "border-amber-400/40 bg-amber-50/60 dark:bg-amber-500/[0.06]")}>
+    <Card className={cn(destaque && "border-[var(--chart-1)]/40 bg-[var(--chart-1)]/[0.06]")}>
       <CardContent className="flex h-full flex-col gap-3 py-4">
         <div className="flex items-center gap-2.5">
           {Icon && (
@@ -48,7 +54,7 @@ export function StatCard({
               className={cn(
                 "flex size-9 shrink-0 items-center justify-center rounded-xl",
                 destaque
-                  ? "bg-amber-400/20 text-amber-700 dark:text-amber-400"
+                  ? "bg-[var(--chart-1)]/20 text-[#8a6a00] dark:text-[#ffd600]"
                   : "bg-accent text-accent-foreground"
               )}
             >
@@ -61,7 +67,8 @@ export function StatCard({
         <div className="flex flex-col gap-1">
           <span
             className={cn(
-              "font-heading text-2xl font-bold tabular-nums",
+              "font-heading font-semibold tracking-tight tabular-nums",
+              size === "hero" ? "text-[44px]" : "text-[27px]",
               tom === "positivo" && "text-green-600 dark:text-green-400",
               tom === "negativo" && "text-red-600 dark:text-red-400"
             )}
@@ -84,12 +91,23 @@ export function StatCard({
                 {infoVariacao.tom === "negativo" && <TrendingDown className="size-3" />}
                 {infoVariacao.texto}
               </span>
-              {comparativoLabel && (
+              {!infoVariacao.indisponivel && comparativoLabel && (
                 <span className="text-xs text-muted-foreground">{comparativoLabel}</span>
               )}
             </div>
           )}
-          {legenda && <p className="text-xs text-muted-foreground">{legenda}</p>}
+          {legenda && (
+            <span
+              className={cn(
+                "inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                legendaTom === "negativo"
+                  ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              {legenda}
+            </span>
+          )}
         </div>
 
         {href && (

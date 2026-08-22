@@ -4,6 +4,8 @@ import * as React from "react";
 import { useTheme } from "next-themes";
 
 import { cn } from "@/lib/utils";
+import { contarDiasOperacao, mesReferencia } from "@/lib/dias-operacao";
+import type { PeriodoSelecionado } from "@/lib/dashboard-periodo";
 import { useUnidade } from "@/components/providers/unidade-provider";
 import type { DashboardResumo } from "@/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,8 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // padrão já usado nos demais gráficos/cartões com design system próprio
 // deste dashboard.
 const PALETA_CLARA = {
-  background: "#fff9ec",
-  border: "rgba(0,0,0,0.06)",
+  background: "#ffffff",
+  border: "#e4e2dc",
   titulo: "#6b665c",
   textPrimary: "#292620",
   textSecondary: "#777168",
@@ -74,16 +76,6 @@ function formatarPercentual(valor: number) {
   return `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 }
 
-/** A Polibrilho atende de segunda a sábado — só domingo não conta como dia de operação pra ritmo/projeção e meta de veículos. */
-function contarDiasOperacao(ano: number, mes: number, ateDia?: number): number {
-  const ultimoDia = ateDia ?? new Date(ano, mes + 1, 0).getDate();
-  let contador = 0;
-  for (let dia = 1; dia <= ultimoDia; dia++) {
-    if (new Date(ano, mes, dia).getDay() !== 0) contador++;
-  }
-  return contador;
-}
-
 function useCoresMetas(): Cores {
   const { resolvedTheme } = useTheme();
   const [montado, setMontado] = React.useState(false);
@@ -141,14 +133,14 @@ type StatusProjecao = "above" | "on-track" | "below";
 
 function BadgeStatus({ status, cores }: { status: StatusProjecao; cores: Cores }) {
   const config: Record<StatusProjecao, { label: string; bg: string; border: string; texto: string }> = {
-    above: { label: "Projeção acima do alvo", bg: cores.successBg, border: cores.successBorder, texto: cores.success },
+    above: { label: "Acima do alvo", bg: cores.successBg, border: cores.successBorder, texto: cores.success },
     "on-track": {
-      label: "Projeção dentro do esperado",
+      label: "Dentro do esperado",
       bg: cores.onTrackBg,
       border: cores.onTrackBorder,
       texto: cores.onTrackText,
     },
-    below: { label: "Projeção abaixo do alvo", bg: cores.belowBg, border: cores.belowBorder, texto: cores.belowText },
+    below: { label: "Abaixo do alvo", bg: cores.belowBg, border: cores.belowBorder, texto: cores.belowText },
   };
   const c = config[status];
 
@@ -209,7 +201,14 @@ function BarraComMarcador({
  * "dia de operação" aqui exclui só domingo (não é o "dia útil" seg-sex
  * genérico do documento original).
  */
-export function MetasDoMesCard({ resumo }: { resumo: DashboardResumo }) {
+export function MetasDoMesCard({
+  resumo,
+  periodo,
+}: {
+  resumo: DashboardResumo;
+  /** O "mês" deste card segue o mês de `periodo.fim` — ver mesReferencia() em lib/dias-operacao.ts. */
+  periodo: PeriodoSelecionado;
+}) {
   const { unidades, unidadeSelecionadaId } = useUnidade();
   const cores = useCoresMetas();
   const unidadesConsideradas = unidadeSelecionadaId
@@ -217,24 +216,22 @@ export function MetasDoMesCard({ resumo }: { resumo: DashboardResumo }) {
     : unidades;
 
   const metaFaturamento = unidadesConsideradas.reduce((acc, u) => acc + (u.meta_mensal ?? 0), 0);
-  const capacidadeTotal = unidadesConsideradas.reduce((acc, u) => acc + (u.capacidade_dia ?? 0), 0);
+  const capacidadeAutomovel = unidadesConsideradas.reduce((acc, u) => acc + (u.capacidade_dia ?? 0), 0);
+  const capacidadeMoto = unidadesConsideradas.reduce((acc, u) => acc + (u.capacidade_dia_moto ?? 0), 0);
 
-  const hoje = new Date();
-  const ano = hoje.getFullYear();
-  const mes = hoje.getMonth();
-  const diaAtual = hoje.getDate();
-  const mesLabel = hoje.toLocaleDateString("pt-BR", { month: "long" });
+  const { ano, mes, dia: diaAtual, mesLabel } = mesReferencia(periodo);
 
   const diasOperacaoTotal = contarDiasOperacao(ano, mes);
   const diasOperacaoDecorridos = Math.min(diasOperacaoTotal, contarDiasOperacao(ano, mes, diaAtual));
   const diasOperacaoRestantes = Math.max(0, diasOperacaoTotal - diasOperacaoDecorridos);
 
-  const metaVeiculos = capacidadeTotal * diasOperacaoTotal;
+  const metaAutomovel = capacidadeAutomovel * diasOperacaoTotal;
+  const metaMoto = capacidadeMoto * diasOperacaoTotal;
 
   const cardStyle = { background: cores.background, borderColor: cores.border };
   const tituloStyle = { fontSize: 16, fontWeight: 700, color: cores.titulo };
 
-  if (metaFaturamento <= 0 && metaVeiculos <= 0) {
+  if (metaFaturamento <= 0 && metaAutomovel <= 0 && metaMoto <= 0) {
     return (
       <Card className="rounded-[18px] shadow-none" style={cardStyle}>
         <CardHeader>
@@ -251,7 +248,8 @@ export function MetasDoMesCard({ resumo }: { resumo: DashboardResumo }) {
   }
 
   const faturamentoAtual = resumo.mes.faturamento;
-  const veiculosAtual = resumo.mes.qtd_servicos;
+  const automovelAtual = resumo.mes_veiculos_automovel;
+  const motoAtual = resumo.mes_veiculos_moto;
 
   const percentualMeta = metaFaturamento > 0 ? (faturamentoAtual / metaFaturamento) * 100 : 0;
   const progressoEsperado = diasOperacaoTotal > 0 ? (diasOperacaoDecorridos / diasOperacaoTotal) * 100 : 0;
@@ -298,11 +296,21 @@ export function MetasDoMesCard({ resumo }: { resumo: DashboardResumo }) {
               cores={cores}
             />
           )}
-          {metaVeiculos > 0 && (
+          {metaAutomovel > 0 && (
             <BarraComMarcador
-              titulo="Veículos"
-              atual={veiculosAtual}
-              meta={metaVeiculos}
+              titulo="Veículos · Automóvel"
+              atual={automovelAtual}
+              meta={metaAutomovel}
+              progressoEsperado={progressoEsperado}
+              formatarValor={(v) => String(Math.round(v))}
+              cores={cores}
+            />
+          )}
+          {metaMoto > 0 && (
+            <BarraComMarcador
+              titulo="Veículos · Motocicleta"
+              atual={motoAtual}
+              meta={metaMoto}
               progressoEsperado={progressoEsperado}
               formatarValor={(v) => String(Math.round(v))}
               cores={cores}
@@ -312,14 +320,15 @@ export function MetasDoMesCard({ resumo }: { resumo: DashboardResumo }) {
 
         <div className={cn("flex flex-col")} style={{ borderTop: `1px solid ${cores.border}`, paddingTop: 16 }}>
           <div className="flex items-center justify-between">
-            <span style={{ fontSize: 13, color: cores.textSecondary }}>Ritmo necessário por dia</span>
+            <span style={{ fontSize: 13, color: cores.textSecondary }}>Ritmo necessário por dia de operação</span>
             <span style={{ fontSize: 14, fontWeight: 700, color: metaJaAtingida ? cores.success : cores.yellowDark }}>
               {metaJaAtingida ? "Meta mensal atingida" : formatarMoeda(ritmoNecessario)}
             </span>
           </div>
           <p className="mt-2" style={{ fontSize: 11, color: cores.textMuted }}>
-            A marca cinza nas barras mostra onde você deveria estar hoje ({formatarPercentual(progressoEsperado)} do
-            mês).
+            A marca cinza mostra onde você deveria estar hoje ({formatarPercentual(progressoEsperado)} do mês).
+            {!metaJaAtingida &&
+              ` Restam ${diasOperacaoRestantes} dia${diasOperacaoRestantes === 1 ? "" : "s"} de operação — a Polibrilho atende de segunda a sábado.`}
           </p>
         </div>
       </CardContent>

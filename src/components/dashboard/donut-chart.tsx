@@ -93,6 +93,10 @@ export function DonutChart({
   vazio,
   href,
   hrefLabel = "Ver detalhes",
+  mostrarCentro,
+  contagemLabel = "serviço",
+  naoVendidos,
+  fraseUnica,
 }: {
   titulo: string;
   /** Máximo de 4 categorias (paleta validada) — agrupe o resto em "Outros" antes de passar aqui. */
@@ -101,6 +105,14 @@ export function DonutChart({
   vazio: string;
   href?: string;
   hrefLabel?: string;
+  /** Mostra valor total + contagem de itens no centro da rosca, em vez de deixar o miolo vazio (seção 4.8 das melhorias — usado no Mix de serviços). */
+  mostrarCentro?: boolean;
+  /** Singular do que está sendo contado no centro, ex.: "serviço" vira "serviços" no plural. */
+  contagemLabel?: string;
+  /** Nomes do catálogo ativo que não venderam nada no período — vira uma linha abaixo da legenda em vez de ficar de fora da leitura. */
+  naoVendidos?: string[];
+  /** Frase explicativa quando só há 1 categoria com valor — "100%" sozinho é tautologia. */
+  fraseUnica?: string;
 }) {
   const total = dados.reduce((acc, d) => acc + d.valor, 0);
 
@@ -112,6 +124,81 @@ export function DonutChart({
       <CardContent>
         {dados.length === 0 || total <= 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">{vazio}</p>
+        ) : mostrarCentro ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-5">
+              <div
+                className="relative size-[118px] shrink-0"
+                role="img"
+                aria-label={`${titulo}: ${formatarValor(total)} em ${dados.length} ${contagemLabel}${dados.length === 1 ? "" : "s"}, líder ${dados[0].label} com ${formatarPercentual(dados[0].valor, total)}`}
+              >
+                <PieChart width={118} height={118}>
+                  <Pie
+                    data={dados}
+                    dataKey="valor"
+                    nameKey="label"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={55}
+                    paddingAngle={2}
+                    stroke="var(--card)"
+                    strokeWidth={2}
+                  >
+                    {dados.map((_, i) => (
+                      <Cell key={i} fill={CORES_DONUT[i % CORES_DONUT.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<TooltipConteudo total={total} formatarValor={formatarValor} />} />
+                </PieChart>
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-lg font-semibold text-foreground tabular-nums">
+                    {formatarValor(total)}
+                  </span>
+                  <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                    {dados.length} {contagemLabel}
+                    {dados.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex min-w-0 flex-1 flex-col">
+                {dados.map((d, i) => (
+                  <div
+                    key={d.label}
+                    className="flex items-center gap-2.5 border-b border-border py-2 text-[12.5px] last:border-b-0"
+                  >
+                    <span
+                      className="size-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: CORES_DONUT[i % CORES_DONUT.length] }}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-muted-foreground">{d.label}</span>
+                    <span className="shrink-0 font-semibold tabular-nums text-foreground">
+                      {formatarValor(d.valor)}
+                    </span>
+                    <span className="w-9 shrink-0 text-right tabular-nums text-muted-foreground">
+                      {formatarPercentual(d.valor, total)}
+                    </span>
+                  </div>
+                ))}
+                {naoVendidos && naoVendidos.length > 0 && (
+                  <div className="flex items-center gap-2.5 py-2 text-[12.5px]">
+                    <span className="size-2.5 shrink-0 rounded-full border border-dashed border-muted-foreground" />
+                    <span className="min-w-0 flex-1 truncate text-muted-foreground/75">
+                      {naoVendidos.slice(0, 3).join(", ")}
+                      {naoVendidos.length > 3 ? ` e mais ${naoVendidos.length - 3}` : ""}
+                    </span>
+                    <span className="shrink-0 tabular-nums text-muted-foreground/75">R$ 0</span>
+                    <span className="w-9 shrink-0 text-right tabular-nums text-muted-foreground/75">0%</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {fraseUnica && dados.length === 1 && (
+              <p className="text-xs text-muted-foreground">{fraseUnica}</p>
+            )}
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-4">
             <ResponsiveContainer width="100%" height={200}>
