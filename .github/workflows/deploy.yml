@@ -15,8 +15,14 @@ jobs:
       - name: Instalar Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Fazer Deploy na Vercel
-        run: vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
-        env:
-          VERCEL_ORG_ID: "victor-2462"
-          VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID }}"
+      - name: Vincular Projeto Automaticamente
+        run: vercel link --yes --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Puxar Configurações
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Construir Projeto
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Enviar para a Vercel (Deploy Final)
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
