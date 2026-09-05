@@ -9,7 +9,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   LogOut,
-  Menu,
+  Plus,
   Users,
   Wallet,
   Zap,
@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,23 +72,23 @@ const NAV_ITEMS: NavEntrada[] = [
   { tipo: "link", href: "/financeiro", label: "Financeiro", icon: Wallet, adminOnly: true },
 ];
 
+function leafAtivo(pathname: string, href: string) {
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
+function grupoAtivo(pathname: string, grupo: NavGrupo) {
+  return grupo.itens.some((i) => leafAtivo(pathname, i.href));
+}
+
 function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
   const [gruposAlternadosManual, setGruposAlternadosManual] = React.useState<Set<string>>(
     () => new Set()
   );
 
-  function leafAtivo(href: string) {
-    return href === "/" ? pathname === "/" : pathname.startsWith(href);
-  }
-
-  function grupoAtivo(grupo: NavGrupo) {
-    return grupo.itens.some((i) => leafAtivo(i.href));
-  }
-
   function estaAberto(grupo: NavGrupo) {
     // Abre por padrão quando contém a rota atual; alternar manualmente inverte esse padrão.
-    return grupoAtivo(grupo) !== gruposAlternadosManual.has(grupo.label);
+    return grupoAtivo(pathname, grupo) !== gruposAlternadosManual.has(grupo.label);
   }
 
   function alternarGrupo(label: string) {
@@ -114,6 +113,7 @@ function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () =>
 
         if (item.tipo === "grupo") {
           const aberto = estaAberto(item);
+          const ativo = grupoAtivo(pathname, item);
 
           return (
             <div key={item.label}>
@@ -122,12 +122,12 @@ function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () =>
                 onClick={() => alternarGrupo(item.label)}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                  grupoAtivo(item)
+                  ativo
                     ? "bg-accent text-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
               >
-                <Icon className={cn("size-4.5", grupoAtivo(item) && "text-primary")} />
+                <Icon className={cn("size-4.5", ativo && "text-primary")} />
                 {item.label}
                 <ChevronDown
                   className={cn("ml-auto size-3.5 transition-transform", aberto && "rotate-180")}
@@ -143,7 +143,7 @@ function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () =>
                       onClick={onNavigate}
                       className={cn(
                         "rounded-lg px-3 py-2 text-sm transition-colors",
-                        leafAtivo(sub.href)
+                        leafAtivo(pathname, sub.href)
                           ? "font-medium text-primary"
                           : "text-muted-foreground hover:bg-accent hover:text-foreground"
                       )}
@@ -157,7 +157,7 @@ function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () =>
           );
         }
 
-        const active = leafAtivo(item.href);
+        const active = leafAtivo(pathname, item.href);
 
         return (
           <Link
@@ -233,7 +233,15 @@ function NotificacoesMenu() {
   );
 }
 
-function UsuarioMenu({ usuario, isAdmin }: { usuario: Usuario; isAdmin: boolean }) {
+function UsuarioMenu({
+  usuario,
+  isAdmin,
+  variant = "sidebar",
+}: {
+  usuario: Usuario;
+  isAdmin: boolean;
+  variant?: "sidebar" | "compact";
+}) {
   const router = useRouter();
   const [saindo, setSaindo] = React.useState(false);
 
@@ -252,6 +260,53 @@ function UsuarioMenu({ usuario, isAdmin }: { usuario: Usuario; isAdmin: boolean 
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+  if (variant === "compact") {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <button
+              type="button"
+              aria-label="Menu do usuário"
+              className="flex min-w-14 flex-col items-center gap-0.5 rounded-full px-3 py-2 text-[10px] font-medium text-muted-foreground transition-colors data-popup-open:bg-foreground/10 data-popup-open:text-primary"
+            />
+          }
+        >
+          <Avatar size="sm" className="size-5">
+            <AvatarFallback className="bg-primary text-[10px] font-bold text-primary-foreground">
+              {iniciais}
+            </AvatarFallback>
+          </Avatar>
+          Você
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          side="top"
+          sideOffset={12}
+          className="w-48 bg-popover/90"
+        >
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>{usuario.nome}</DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          {isAdmin && (
+            <>
+              <DropdownMenuItem render={<Link href="/financeiro" />}>
+                <Wallet className="size-4" />
+                Financeiro
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          <DropdownMenuItem disabled={saindo} onClick={handleSignOut} variant="destructive">
+            <LogOut className="size-4" />
+            Sair
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
 
   return (
     <DropdownMenu>
@@ -290,6 +345,99 @@ function UsuarioMenu({ usuario, isAdmin }: { usuario: Usuario; isAdmin: boolean 
   );
 }
 
+function MobileBottomNavItem({ item, pathname }: { item: NavEntrada; pathname: string }) {
+  const Icon = item.icon;
+
+  if (item.tipo === "grupo") {
+    const ativo = grupoAtivo(pathname, item);
+
+    return (
+      <DropdownMenu key={item.label}>
+        <DropdownMenuTrigger
+          render={
+            <button
+              type="button"
+              className={cn(
+                "flex min-w-14 flex-col items-center gap-0.5 rounded-full px-3 py-2 text-[10px] font-medium transition-colors data-popup-open:bg-foreground/10 data-popup-open:text-primary",
+                ativo ? "bg-foreground/10 text-primary" : "text-muted-foreground"
+              )}
+            />
+          }
+        >
+          <Icon className="size-5" />
+          {item.label}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center" side="top" sideOffset={12} className="w-44 bg-popover/90">
+          {item.itens.map((sub) => (
+            <DropdownMenuItem
+              key={sub.href}
+              render={<Link href={sub.href} />}
+              className={leafAtivo(pathname, sub.href) ? "font-medium text-primary" : undefined}
+            >
+              {sub.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  const ativo = leafAtivo(pathname, item.href);
+
+  return (
+    <Link
+      key={item.href}
+      href={item.href}
+      className={cn(
+        "flex min-w-14 flex-col items-center gap-0.5 rounded-full px-3 py-2 text-[10px] font-medium transition-colors",
+        ativo ? "bg-foreground/10 text-primary" : "text-muted-foreground"
+      )}
+    >
+      <Icon className="size-5" />
+      {item.label}
+    </Link>
+  );
+}
+
+function MobileBottomNav({ isAdmin, usuario }: { isAdmin: boolean; usuario: Usuario }) {
+  const pathname = usePathname();
+  // Financeiro fica dentro do menu "Você" no mobile (junto com Sair) em vez de
+  // ocupar um slot na cápsula; por isso itens adminOnly não entram aqui.
+  const itensVisiveis = NAV_ITEMS.filter((item) => item.tipo !== "link" || !item.adminOnly);
+  const meio = Math.ceil(itensVisiveis.length / 2);
+  const primeiraMetade = itensVisiveis.slice(0, meio);
+  const segundaMetade = itensVisiveis.slice(meio);
+
+  return (
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),0.875rem)] lg:hidden"
+      aria-label="Navegação principal"
+    >
+      <div className="flex items-center gap-0.5 rounded-full border border-border bg-popover/90 p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+        {primeiraMetade.map((item) => (
+          <MobileBottomNavItem key={item.tipo === "grupo" ? item.label : item.href} item={item} pathname={pathname} />
+        ))}
+
+        <Link
+          href="/ordens/novo"
+          aria-label="Nova ordem de serviço"
+          className="flex items-center justify-center px-2 py-2 transition-colors"
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-[image:var(--gradient-cta)] text-[#101314] shadow-sm">
+            <Plus className="size-5" />
+          </span>
+        </Link>
+
+        {segundaMetade.map((item) => (
+          <MobileBottomNavItem key={item.tipo === "grupo" ? item.label : item.href} item={item} pathname={pathname} />
+        ))}
+
+        <UsuarioMenu usuario={usuario} isAdmin={isAdmin} variant="compact" />
+      </div>
+    </nav>
+  );
+}
+
 function LogoPolibrilho() {
   return (
     <div className="flex items-center justify-center border-b border-border px-4 py-2 sm:px-5">
@@ -310,7 +458,6 @@ export function AppShell({
 }) {
   const unidadeFixaId = usuario.perfil === "administrador" ? null : usuario.unidade_id;
   const isAdmin = usuario.perfil === "administrador";
-  const [menuAberto, setMenuAberto] = React.useState(false);
 
   return (
     <UnidadeProvider unidades={unidades} unidadeFixaId={unidadeFixaId}>
@@ -326,31 +473,8 @@ export function AppShell({
             </div>
           </aside>
 
-          <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
-            <SheetContent side="left" className="flex w-72 flex-col gap-0 p-0">
-              <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
-              <LogoPolibrilho />
-              <div className="flex-1 overflow-y-auto px-3 py-3">
-                <NavList isAdmin={isAdmin} onNavigate={() => setMenuAberto(false)} />
-              </div>
-              <div className="border-t border-border px-3 py-3">
-                <UsuarioMenu usuario={usuario} isAdmin={isAdmin} />
-              </div>
-            </SheetContent>
-          </Sheet>
-
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <header className="flex items-center gap-3 px-4 py-3 sm:px-6">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setMenuAberto(true)}
-                aria-label="Abrir menu"
-              >
-                <Menu className="size-5" />
-              </Button>
-
               {/* eslint-disable-next-line @next/next/no-img-element -- logo estático em public/, sem necessidade do pipeline de otimização de imagem */}
               <img
                 src="/logo-polibrilho.png"
@@ -366,8 +490,12 @@ export function AppShell({
               </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">{children}</main>
+            <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28 sm:px-6 sm:pt-6 sm:pb-28 lg:pb-6">
+              {children}
+            </main>
           </div>
+
+          <MobileBottomNav isAdmin={isAdmin} usuario={usuario} />
         </div>
       </div>
     </UnidadeProvider>
