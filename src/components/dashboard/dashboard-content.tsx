@@ -191,10 +191,10 @@ export function DashboardContent({
               const dadosMixServicos = agruparTopCategorias(
                 (insights.top_servicos ?? []).map((s) => ({ label: s.nome, valor: s.faturamento }))
               );
-              const valorPendenteAtraso = Math.max(
-                0,
-                resumo.periodo.faturamento - resumo.valor_recebido_em_dia
-              );
+              // Mesmo valor de resumo.contas_a_receber por construção (os dois
+              // somam status_pagamento pendente/parcial no mesmo período) —
+              // usa contas_a_receber direto pra nunca divergir na tela.
+              const valorPendenteAtraso = resumo.contas_a_receber;
               const percentualRecebidoEmDia =
                 resumo.periodo.faturamento > 0
                   ? (resumo.valor_recebido_em_dia / resumo.periodo.faturamento) * 100
@@ -286,7 +286,7 @@ export function DashboardContent({
                       legenda={
                         valorPendenteAtraso > 0
                           ? `${formatarMoeda(valorPendenteAtraso)} pendentes`
-                          : "Sem pendências vencidas"
+                          : "Sem pendências"
                       }
                     />
                   </div>

@@ -259,7 +259,7 @@ function UsuarioMenu({ usuario, isAdmin }: { usuario: Usuario; isAdmin: boolean 
         render={
           <button
             type="button"
-            className="flex items-center gap-2 rounded-full py-1 pr-1 pl-1 transition-colors hover:bg-accent sm:pr-2.5"
+            className="flex w-full items-center gap-2 rounded-xl py-1.5 pr-2.5 pl-1 transition-colors hover:bg-accent"
           />
         }
       >
@@ -268,15 +268,15 @@ function UsuarioMenu({ usuario, isAdmin }: { usuario: Usuario; isAdmin: boolean 
             {iniciais}
           </AvatarFallback>
         </Avatar>
-        <span className="hidden flex-col items-start leading-tight sm:flex">
-          <span className="text-xs font-semibold uppercase">{usuario.nome.split(" ")[0]}</span>
+        <span className="flex min-w-0 flex-1 flex-col items-start leading-tight">
+          <span className="truncate text-xs font-semibold uppercase">{usuario.nome.split(" ")[0]}</span>
           <span className="text-[11px] text-muted-foreground">
             {isAdmin ? "Administrador" : "Atendente"}
           </span>
         </span>
-        <ChevronDown className="hidden size-3.5 text-muted-foreground sm:block" />
+        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="start" side="top" className="w-48">
         <DropdownMenuGroup>
           <DropdownMenuLabel>{usuario.nome}</DropdownMenuLabel>
         </DropdownMenuGroup>
@@ -321,6 +321,9 @@ export function AppShell({
             <div className="flex-1 overflow-y-auto px-3 py-3">
               <NavList isAdmin={isAdmin} />
             </div>
+            <div className="border-t border-border px-3 py-3">
+              <UsuarioMenu usuario={usuario} isAdmin={isAdmin} />
+            </div>
           </aside>
 
           <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
@@ -329,6 +332,9 @@ export function AppShell({
               <LogoPolibrilho />
               <div className="flex-1 overflow-y-auto px-3 py-3">
                 <NavList isAdmin={isAdmin} onNavigate={() => setMenuAberto(false)} />
+              </div>
+              <div className="border-t border-border px-3 py-3">
+                <UsuarioMenu usuario={usuario} isAdmin={isAdmin} />
               </div>
             </SheetContent>
           </Sheet>
@@ -357,7 +363,6 @@ export function AppShell({
                 <NotificacoesMenu />
                 <Separator orientation="vertical" className="hidden h-6 sm:block" />
                 <UnidadeSeletor />
-                <UsuarioMenu usuario={usuario} isAdmin={isAdmin} />
               </div>
             </header>
 
