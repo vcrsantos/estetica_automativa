@@ -294,7 +294,7 @@ function LogoPolibrilho() {
   return (
     <div className="flex items-center justify-center border-b border-border px-4 py-2 sm:px-5">
       {/* eslint-disable-next-line @next/next/no-img-element -- logo estático em public/, sem necessidade do pipeline de otimização de imagem */}
-      <img src="/logo-polibrilho.png" alt="POLIBRILHO Estética Automotiva" className="h-24 w-auto" />
+      <img src="/logo-polibrilho.png" alt="POLIBRILHO Estética Automotiva" className="h-40 w-auto" />
     </div>
   );
 }

@@ -301,7 +301,7 @@ export function DashboardContent({
                   <div className="grid gap-4 lg:grid-cols-[1.62fr_1fr]">
                     <GraficoCombinado
                       dados={insights.evolucao_diaria ?? []}
-                      titulo={`Histórico de faturamento (${periodo.label})`}
+                      titulo={`Histórico de faturamento  · ${periodo.label}`}
                     />
                     <MetasDoMesCard resumo={resumo} periodo={periodo} />
                   </div>
@@ -312,7 +312,7 @@ export function DashboardContent({
                       unidades={insights.comparativo_unidades ?? []}
                     />
                     <DonutChart
-                      titulo={`Mix de serviços (${periodo.label})`}
+                      titulo={`Mix de serviços · ${periodo.label}`}
                       dados={dadosMixServicos}
                       formatarValor={formatarMoeda}
                       vazio="Sem serviços registrados no período."
