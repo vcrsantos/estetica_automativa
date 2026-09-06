@@ -4,7 +4,7 @@ Sistema interno de gestão da POLIBRILHO (estética automotiva). Escopo completo
 [`escopo-sistema-polibrilho.md`](./escopo-sistema-polibrilho.md).
 
 Stack: Next.js 16 (App Router, TypeScript) + Tailwind CSS + shadcn/ui + Supabase
-(Postgres + Auth), com Row Level Security por unidade e por perfil de usuário
+(Postgres + Auth), com Row Level Security por unidade e por perfil de usuário.
 
 ## Estado atual
 
