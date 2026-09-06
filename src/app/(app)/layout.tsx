@@ -1,19 +1,12 @@
 import { AppShell } from "@/components/app-shell";
-import { getCurrentUsuario } from "@/lib/auth/current-user";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUsuario, getUnidadesDoUsuario } from "@/lib/auth/current-user";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const usuario = await getCurrentUsuario();
-
-  const supabase = await createClient();
-  const { data: unidades } = await supabase
-    .from("unidades")
-    .select("*")
-    .eq("ativo", true)
-    .order("nome");
+  const unidades = await getUnidadesDoUsuario();
 
   return (
-    <AppShell usuario={usuario} unidades={unidades ?? []}>
+    <AppShell usuario={usuario} unidades={unidades}>
       {children}
     </AppShell>
   );

@@ -41,37 +41,37 @@ O projeto não está linkado à CLI do Supabase, então as migrations em
 `supabase/migrations/` precisam ser aplicadas manualmente:
 
 1. Abra o painel do Supabase → **SQL Editor** → **New query**.
-2. Cole e rode, **nesta ordem**, o conteúdo de:
-   - `supabase/migrations/0001_schema.sql`
-   - `supabase/migrations/0002_rls.sql`
-   - `supabase/migrations/0003_seed.sql`
+2. Cole e rode, **em ordem numérica**, o conteúdo de cada arquivo em
+   `supabase/migrations/` (de `0001_schema.sql` até o mais recente).
 
 Isso cria as tabelas, os enums, os índices, as políticas de RLS e os dados
 iniciais (as duas unidades e os serviços do catálogo).
 
 ### 4. Criar o primeiro usuário administrador
 
-O sistema não tem cadastro de usuários pela interface ainda (fica para uma próxima
-etapa). Para o primeiro acesso:
+Desde a migration `0031`, o cadastro é feito pela própria interface — não
+existe mais um jeito de inserir direto em `usuarios` (a tabela ganhou uma
+trigger que já cria a linha sozinha, com `status = 'pendente'`, assim que
+alguém termina o cadastro em `auth.users`). Para o primeiro acesso:
 
-1. No painel do Supabase → **Authentication → Users → Add user**, crie um usuário
-   com e-mail e senha (marque "Auto Confirm User").
-2. Copie o **User UID** gerado.
-3. No **SQL Editor**, rode (trocando o UUID e os dados):
+1. Acesse `/cadastro` e crie sua conta normalmente — ela nasce pendente,
+   como qualquer outra.
+2. Copie o seu **User UID** em Supabase → **Authentication → Users**.
+3. No **SQL Editor**, promova essa conta a administrador ativo, vinculado a
+   todas as unidades (trocando o UUID):
 
    ```sql
-   insert into usuarios (id, nome, email, perfil, unidade_id)
-   values (
-     'COLE-O-UUID-AQUI',
-     'Seu nome',
-     'seu-email@polibrilho.com.br',
-     'administrador',
-     null -- administrador enxerga as duas unidades, não precisa de unidade fixa
-   );
+   update usuarios
+      set perfil = 'administrador', status = 'ativo'
+    where id = 'COLE-O-UUID-AQUI';
+
+   insert into usuario_unidades (usuario_id, unidade_id)
+   select 'COLE-O-UUID-AQUI', id from unidades;
    ```
 
-   Para um atendente, use `perfil = 'atendente'` e informe o `unidade_id` da
-   unidade dele (veja os ids em `select id, nome from unidades;`).
+Os próximos usuários se cadastram em `/cadastro` e ficam em `/aguardando`
+até você aprová-los em **Usuários**, no menu do sistema — lá dá pra escolher
+o papel (Atendente/Gerente/Administrador) e quais unidades cada um vê.
 
 ### 5. Rodar o projeto
 

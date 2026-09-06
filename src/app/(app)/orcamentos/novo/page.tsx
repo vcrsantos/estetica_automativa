@@ -1,18 +1,16 @@
 import { NovoOrcamentoForm } from "@/components/orcamentos/novo-orcamento-form";
-import { getCurrentUsuario } from "@/lib/auth/current-user";
+import { exigirPermissao, getUnidadesDoUsuario } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function NovoOrcamentoPage() {
-  const usuario = await getCurrentUsuario();
+  await exigirPermissao("orcamentos", "editar");
   const supabase = await createClient();
 
-  const [{ data: unidades }, { data: servicos }, { data: precos }] = await Promise.all([
-    supabase.from("unidades").select("*").eq("ativo", true).order("nome"),
+  const [unidades, { data: servicos }, { data: precos }] = await Promise.all([
+    getUnidadesDoUsuario(),
     supabase.from("servicos").select("*").eq("ativo", true).order("nome"),
     supabase.from("precos").select("*"),
   ]);
-
-  const unidadeFixaId = usuario.perfil === "administrador" ? null : usuario.unidade_id;
 
   return (
     <div className="flex flex-col gap-6">
@@ -23,12 +21,7 @@ export default async function NovoOrcamentoPage() {
         </p>
       </div>
 
-      <NovoOrcamentoForm
-        unidades={unidades ?? []}
-        unidadeFixaId={unidadeFixaId}
-        servicos={servicos ?? []}
-        precos={precos ?? []}
-      />
+      <NovoOrcamentoForm unidades={unidades} servicos={servicos ?? []} precos={precos ?? []} />
     </div>
   );
 }

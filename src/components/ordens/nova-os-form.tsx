@@ -46,17 +46,15 @@ function hojeIso() {
 
 export function NovaOsForm({
   unidades,
-  unidadeFixaId,
   servicos,
   precos,
 }: {
   unidades: Unidade[];
-  unidadeFixaId: string | null;
   servicos: Servico[];
   precos: Preco[];
 }) {
   const router = useRouter();
-  const [unidadeId, setUnidadeId] = React.useState(unidadeFixaId ?? unidades[0]?.id ?? "");
+  const [unidadeId, setUnidadeId] = React.useState(unidades[0]?.id ?? "");
   const [cliente, setCliente] = React.useState<Cliente | null>(null);
   const [veiculo, setVeiculo] = React.useState<Veiculo | null>(null);
   const [itens, setItens] = React.useState<ItemOs[]>([]);
@@ -220,7 +218,7 @@ export function NovaOsForm({
 
   return (
     <div className="flex flex-col gap-6 pb-24">
-      {unidades.length > 1 && !unidadeFixaId && (
+      {unidades.length > 1 && (
         <div className="flex flex-col gap-2">
           <Label>Unidade</Label>
           <Select

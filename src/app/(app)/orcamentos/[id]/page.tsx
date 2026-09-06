@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 
 import { OrcamentoDetail } from "@/components/orcamentos/orcamento-detail";
+import { exigirPermissao } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function OrcamentoDetailPage({ params }: PageProps<"/orcamentos/[id]">) {
+  await exigirPermissao("orcamentos");
   const { id } = await params;
   const supabase = await createClient();
 

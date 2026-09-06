@@ -8,7 +8,7 @@ const STORAGE_KEY = "polibrilho:unidade-selecionada";
 
 type UnidadeContextValue = {
   unidades: Unidade[];
-  /** null = "todas as unidades" (só disponível para administrador) */
+  /** null = "todas as unidades" (só disponível quando podeAlternar) */
   unidadeSelecionadaId: string | null;
   setUnidadeSelecionadaId: (id: string | null) => void;
   podeAlternar: boolean;
@@ -18,18 +18,16 @@ const UnidadeContext = React.createContext<UnidadeContextValue | null>(null);
 
 export function UnidadeProvider({
   unidades,
-  unidadeFixaId,
   children,
 }: {
+  /** Já vem filtrada pelo servidor: só as unidades que o usuário pode ver. */
   unidades: Unidade[];
-  /** Para atendente: a unidade do usuário, travada. Para admin: null. */
-  unidadeFixaId: string | null;
   children: React.ReactNode;
 }) {
-  const podeAlternar = unidadeFixaId === null;
+  const podeAlternar = unidades.length > 1;
   const [unidadeSelecionadaId, setUnidadeSelecionadaIdState] = React.useState<
     string | null
-  >(unidadeFixaId);
+  >(podeAlternar ? null : (unidades[0]?.id ?? null));
 
   React.useEffect(() => {
     if (!podeAlternar) return;

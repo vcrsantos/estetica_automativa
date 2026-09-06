@@ -97,11 +97,17 @@ export function LoginForm({ next }: { next?: string }) {
           </div>
           {erro && <p className="text-sm text-destructive">{erro}</p>}
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex flex-col gap-3">
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="size-4 animate-spin" />}
             Entrar
           </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            Não tem conta?{" "}
+            <Link href="/cadastro" className="underline-offset-4 hover:underline">
+              Criar conta
+            </Link>
+          </p>
         </CardFooter>
       </form>
     </Card>

@@ -1,4 +1,5 @@
-export type PerfilUsuario = "administrador" | "atendente";
+export type PerfilUsuario = "administrador" | "gerente" | "atendente";
+export type StatusUsuario = "pendente" | "ativo" | "inativo";
 export type PorteVeiculo = "pequeno" | "medio" | "grande" | "moto";
 export type StatusOs = "agendado" | "em_execucao" | "finalizado" | "entregue" | "cancelado";
 export type FormaPagamento = "dinheiro" | "pix" | "debito" | "credito" | "a_prazo";
@@ -35,10 +36,27 @@ export type Usuario = {
   id: string;
   nome: string;
   email: string;
+  telefone: string | null;
   perfil: PerfilUsuario;
-  unidade_id: string | null;
+  status: StatusUsuario;
+  /** Chave = slug da aba (src/lib/abas.ts), valor = nível de acesso. Ausente = 'nenhum'. Ignorado para administrador, que sempre tem tudo liberado. */
+  permissoes: Partial<Record<string, "nenhum" | "ver" | "editar">>;
   comissao_percentual: number | null;
-  ativo: boolean;
+  criado_em: string;
+};
+
+export type UsuarioUnidade = {
+  usuario_id: string;
+  unidade_id: string;
+};
+
+export type LogAcesso = {
+  id: number;
+  alvo_id: string;
+  autor_id: string;
+  acao: string;
+  antes: Record<string, unknown> | null;
+  depois: Record<string, unknown> | null;
   criado_em: string;
 };
 
@@ -443,6 +461,8 @@ export type Database = {
     Tables: {
       unidades: TableDef<Unidade>;
       usuarios: TableDef<Usuario>;
+      usuario_unidades: TableDef<UsuarioUnidade>;
+      log_acessos: TableDef<LogAcesso>;
       clientes: TableDef<Cliente>;
       veiculos: TableDef<Veiculo>;
       servicos: TableDef<Servico>;

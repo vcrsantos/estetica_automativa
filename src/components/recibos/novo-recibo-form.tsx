@@ -44,13 +44,11 @@ type ItemAvulso = { descricao: string; quantidade: string; valorUnitario: string
 
 export function NovoReciboForm({
   unidades,
-  unidadeFixaId,
 }: {
   unidades: Unidade[];
-  unidadeFixaId: string | null;
 }) {
   const router = useRouter();
-  const [unidadeId, setUnidadeId] = React.useState(unidadeFixaId ?? unidades[0]?.id ?? "");
+  const [unidadeId, setUnidadeId] = React.useState(unidades[0]?.id ?? "");
   const [config, setConfig] = React.useState<ConfiguracaoEmitente | null>(null);
   const [carregandoConfig, setCarregandoConfig] = React.useState(true);
 
@@ -268,7 +266,7 @@ export function NovoReciboForm({
 
   return (
     <div className="flex flex-col gap-6">
-      {unidadeFixaId === null && unidades.length > 1 && (
+      {unidades.length > 1 && (
         <div className="flex max-w-xs flex-col gap-2">
           <Label>Unidade</Label>
           <Select

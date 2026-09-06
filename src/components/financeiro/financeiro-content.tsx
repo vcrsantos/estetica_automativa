@@ -18,7 +18,7 @@ function formatarMoeda(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-export function FinanceiroContent() {
+export function FinanceiroContent({ podeEditar }: { podeEditar: boolean }) {
   const { unidadeSelecionadaId, unidades } = useUnidade();
   const [resumo, setResumo] = React.useState<FinanceiroResumo | null>(null);
   const [carregando, setCarregando] = React.useState(true);
@@ -121,11 +121,13 @@ export function FinanceiroContent() {
         <Card>
           <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
             <CardTitle className="text-base">Despesas do mês</CardTitle>
-            <NovaDespesaDialog
-              unidades={unidades}
-              unidadeSelecionadaId={unidadeSelecionadaId}
-              onCriada={adicionarDespesa}
-            />
+            {podeEditar && (
+              <NovaDespesaDialog
+                unidades={unidades}
+                unidadeSelecionadaId={unidadeSelecionadaId}
+                onCriada={adicionarDespesa}
+              />
+            )}
           </CardHeader>
           <CardContent>
             {resumo.despesas_mes.length === 0 ? (

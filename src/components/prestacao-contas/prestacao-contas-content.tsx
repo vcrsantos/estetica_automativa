@@ -75,15 +75,13 @@ const STATUS_FILTRO_ITENS = {
 
 export function PrestacaoContasContent({
   unidades,
-  unidadeFixaId,
 }: {
   unidades: Unidade[];
-  unidadeFixaId: string | null;
 }) {
   const router = useRouter();
 
   // ---------- compositor ----------
-  const [unidadeId, setUnidadeId] = React.useState(unidadeFixaId ?? unidades[0]?.id ?? "");
+  const [unidadeId, setUnidadeId] = React.useState(unidades[0]?.id ?? "");
   const [cliente, setCliente] = React.useState<Cliente | null>(null);
   const [dataInicio, setDataInicio] = React.useState(inicioMesIso);
   const [dataFim, setDataFim] = React.useState(hojeIso);
@@ -238,7 +236,7 @@ export function PrestacaoContasContent({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {unidadeFixaId === null && unidades.length > 1 && (
+            {unidades.length > 1 && (
               <div className="flex flex-col gap-2">
                 <Label>Unidade</Label>
                 <Select

@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 
 import { ReciboDetail } from "@/components/recibos/recibo-detail";
-import { getCurrentUsuario } from "@/lib/auth/current-user";
+import { exigirPermissao } from "@/lib/auth/current-user";
+import { podeEditarAba } from "@/lib/abas";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ReciboDetailPage({ params }: PageProps<"/recibos/[id]">) {
   const { id } = await params;
-  const usuario = await getCurrentUsuario();
+  const usuario = await exigirPermissao("recibos");
   const supabase = await createClient();
 
   const { data: recibo } = await supabase.from("recibo").select("*").eq("id", id).single();
@@ -30,7 +31,7 @@ export default async function ReciboDetailPage({ params }: PageProps<"/recibos/[
       recibo={recibo}
       itens={itens ?? []}
       osVinculadas={osVinculadas ?? []}
-      isAdmin={usuario.perfil === "administrador"}
+      isAdmin={podeEditarAba(usuario, "recibos")}
     />
   );
 }

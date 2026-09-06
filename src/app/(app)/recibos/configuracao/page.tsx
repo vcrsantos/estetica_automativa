@@ -1,14 +1,9 @@
-import { redirect } from "next/navigation";
-
 import { ConfiguracaoEmitenteForm } from "@/components/recibos/configuracao-emitente-form";
-import { getCurrentUsuario } from "@/lib/auth/current-user";
+import { exigirPermissao } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ConfiguracaoRecibosPage() {
-  const usuario = await getCurrentUsuario();
-  if (usuario.perfil !== "administrador") {
-    redirect("/recibos");
-  }
+  await exigirPermissao("recibos", "editar");
 
   const supabase = await createClient();
   const [{ data: unidades }, { data: configuracoes }] = await Promise.all([

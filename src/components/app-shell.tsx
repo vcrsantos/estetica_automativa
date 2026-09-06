@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LogOut,
   Plus,
+  UserCog,
   Users,
   Wallet,
   Zap,
@@ -38,23 +39,37 @@ import {
 } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UnidadeProvider, useUnidade } from "@/components/providers/unidade-provider";
+import type { AbaSlug } from "@/lib/abas";
 import type { DashboardResumo, Unidade, Usuario } from "@/types/database";
 
 type Icone = React.ComponentType<{ className?: string }>;
 
-type NavLink = { tipo: "link"; href: string; label: string; icon: Icone; adminOnly?: boolean };
-type NavGrupo = { tipo: "grupo"; label: string; icon: Icone; itens: { href: string; label: string }[] };
+/** `adminOnly` é só pra "Usuários" — não tem aba correspondente em `permissoes`, é sempre exclusivo do administrador. */
+type NavLink = {
+  tipo: "link";
+  href: string;
+  label: string;
+  icon: Icone;
+  aba?: AbaSlug;
+  adminOnly?: boolean;
+};
+type NavGrupo = {
+  tipo: "grupo";
+  label: string;
+  icon: Icone;
+  itens: { href: string; label: string; aba: AbaSlug }[];
+};
 type NavEntrada = NavLink | NavGrupo;
 
 const NAV_ITEMS: NavEntrada[] = [
-  { tipo: "link", href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { tipo: "link", href: "/", label: "Dashboard", icon: LayoutDashboard, aba: "dashboard" },
   {
     tipo: "grupo",
     label: "Cadastros",
     icon: Users,
     itens: [
-      { href: "/clientes", label: "Clientes" },
-      { href: "/servicos", label: "Catálogo" },
+      { href: "/clientes", label: "Clientes", aba: "clientes" },
+      { href: "/servicos", label: "Catálogo", aba: "catalogo" },
     ],
   },
   {
@@ -62,8 +77,8 @@ const NAV_ITEMS: NavEntrada[] = [
     label: "Serviços",
     icon: ClipboardList,
     itens: [
-      { href: "/fila-do-dia", label: "Fila do dia" },
-      { href: "/ordens", label: "Histórico" },
+      { href: "/fila-do-dia", label: "Fila do dia", aba: "servicos" },
+      { href: "/ordens", label: "Histórico", aba: "servicos" },
     ],
   },
   {
@@ -71,14 +86,22 @@ const NAV_ITEMS: NavEntrada[] = [
     label: "Ações",
     icon: Zap,
     itens: [
-      { href: "/orcamentos", label: "Orçamentos" },
-      { href: "/reativacao", label: "Reativação" },
-      { href: "/recibos", label: "Recibos" },
-      { href: "/prestacao-contas", label: "Prestação de contas" },
+      { href: "/orcamentos", label: "Orçamentos", aba: "orcamentos" },
+      { href: "/reativacao", label: "Reativação", aba: "reativacao" },
+      { href: "/recibos", label: "Recibos", aba: "recibos" },
+      { href: "/prestacao-contas", label: "Prestação de contas", aba: "prestacao" },
     ],
   },
-  { tipo: "link", href: "/financeiro", label: "Financeiro", icon: Wallet, adminOnly: true },
+  { tipo: "link", href: "/financeiro", label: "Financeiro", icon: Wallet, aba: "financeiro" },
+  { tipo: "link", href: "/usuarios", label: "Usuários", icon: UserCog, adminOnly: true },
 ];
+
+/** Administrador sempre vê tudo; os demais só o que tiver ao menos "ver" na aba. */
+function podeVerAba(usuario: Usuario, aba: AbaSlug | undefined) {
+  if (!aba) return true;
+  if (usuario.perfil === "administrador") return true;
+  return (usuario.permissoes?.[aba] ?? "nenhum") !== "nenhum";
+}
 
 function leafAtivo(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -119,6 +142,33 @@ function useOsPendentesCount() {
       clearInterval(intervalo);
     };
   }, [unidadeSelecionadaId]);
+
+  return quantidade;
+}
+
+// Quantidade de cadastros aguardando aprovação — mostrada em "Usuários".
+function useUsuariosPendentesCount() {
+  const [quantidade, setQuantidade] = React.useState(0);
+
+  React.useEffect(() => {
+    let cancelado = false;
+
+    async function carregar() {
+      const supabase = createClient();
+      const { count } = await supabase
+        .from("usuarios")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pendente");
+      if (!cancelado) setQuantidade(count ?? 0);
+    }
+
+    carregar();
+    const intervalo = setInterval(carregar, 30_000);
+    return () => {
+      cancelado = true;
+      clearInterval(intervalo);
+    };
+  }, []);
 
   return quantidade;
 }
@@ -165,10 +215,12 @@ function NavDot({ ativo }: { ativo: boolean }) {
   return <span className="size-2 rounded-full bg-[image:var(--gradient-cta)]" />;
 }
 
-function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
+function NavList({ usuario, onNavigate }: { usuario: Usuario; onNavigate?: () => void }) {
+  const isAdmin = usuario.perfil === "administrador";
   const pathname = usePathname();
   const pendentes = useOsPendentesCount();
   const clientesInativos = useClientesInativosCount();
+  const usuariosPendentes = useUsuariosPendentesCount();
   const [gruposAlternadosManual, setGruposAlternadosManual] = React.useState<Set<string>>(
     () => new Set()
   );
@@ -187,7 +239,14 @@ function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () =>
     });
   }
 
-  const itensVisiveis = NAV_ITEMS.filter((item) => item.tipo !== "link" || !item.adminOnly || isAdmin);
+  const itensVisiveis = NAV_ITEMS.map((item) =>
+    item.tipo === "grupo"
+      ? { ...item, itens: item.itens.filter((sub) => podeVerAba(usuario, sub.aba)) }
+      : item
+  ).filter((item) => {
+    if (item.tipo === "grupo") return item.itens.length > 0;
+    return (!item.adminOnly || isAdmin) && podeVerAba(usuario, item.aba);
+  });
 
   return (
     <nav className="flex flex-col gap-1">
@@ -262,6 +321,7 @@ function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () =>
           >
             <Icon className={cn("size-4.5", active && "text-primary")} />
             {item.label}
+            {item.label === "Usuários" && <NavBadge quantidade={usuariosPendentes} />}
           </Link>
         );
       })}
@@ -333,6 +393,7 @@ function UsuarioMenu({
 }) {
   const router = useRouter();
   const [saindo, setSaindo] = React.useState(false);
+  const usuariosPendentes = useUsuariosPendentesCount();
 
   async function handleSignOut() {
     setSaindo(true);
@@ -379,12 +440,25 @@ function UsuarioMenu({
             <DropdownMenuLabel>{usuario.nome}</DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          {isAdmin && (
+          {(podeVerAba(usuario, "financeiro") || isAdmin) && (
             <>
-              <DropdownMenuItem render={<Link href="/financeiro" />}>
-                <Wallet className="size-4" />
-                Financeiro
-              </DropdownMenuItem>
+              {podeVerAba(usuario, "financeiro") && (
+                <DropdownMenuItem render={<Link href="/financeiro" />}>
+                  <Wallet className="size-4" />
+                  Financeiro
+                </DropdownMenuItem>
+              )}
+              {isAdmin && (
+                <DropdownMenuItem render={<Link href="/usuarios" />}>
+                  <UserCog className="size-4" />
+                  Usuários
+                  {usuariosPendentes > 0 && (
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {usuariosPendentes}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
             </>
           )}
@@ -415,7 +489,7 @@ function UsuarioMenu({
         <span className="flex min-w-0 flex-1 flex-col items-start leading-tight">
           <span className="truncate text-xs font-semibold uppercase">{usuario.nome.split(" ")[0]}</span>
           <span className="text-[11px] text-muted-foreground">
-            {isAdmin ? "Administrador" : "Atendente"}
+            {isAdmin ? "Administrador" : usuario.perfil === "gerente" ? "Gerente" : "Atendente"}
           </span>
         </span>
         <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
@@ -519,9 +593,17 @@ function MobileBottomNav({ isAdmin, usuario }: { isAdmin: boolean; usuario: Usua
   const pathname = usePathname();
   const pendentes = useOsPendentesCount();
   const clientesInativos = useClientesInativosCount();
-  // Financeiro fica dentro do menu "Você" no mobile (junto com Sair) em vez de
-  // ocupar um slot na cápsula; por isso itens adminOnly não entram aqui.
-  const itensVisiveis = NAV_ITEMS.filter((item) => item.tipo !== "link" || !item.adminOnly);
+  // Financeiro e Usuários ficam dentro do menu "Você" no mobile (junto com
+  // Sair) em vez de ocupar um slot na cápsula — por isso saem daqui sempre,
+  // independente de quem pode vê-los.
+  const itensVisiveis = NAV_ITEMS.filter((item) => item.label !== "Financeiro" && item.label !== "Usuários")
+    .map((item) =>
+      item.tipo === "grupo"
+        ? { ...item, itens: item.itens.filter((sub) => podeVerAba(usuario, sub.aba)) }
+        : item
+    )
+    .filter((item) => item.tipo !== "grupo" || item.itens.length > 0)
+    .filter((item) => item.tipo !== "link" || podeVerAba(usuario, item.aba));
   const meio = Math.ceil(itensVisiveis.length / 2);
   const primeiraMetade = itensVisiveis.slice(0, meio);
   const segundaMetade = itensVisiveis.slice(meio);
@@ -588,17 +670,16 @@ export function AppShell({
   unidades: Unidade[];
   children: React.ReactNode;
 }) {
-  const unidadeFixaId = usuario.perfil === "administrador" ? null : usuario.unidade_id;
   const isAdmin = usuario.perfil === "administrador";
 
   return (
-    <UnidadeProvider unidades={unidades} unidadeFixaId={unidadeFixaId}>
+    <UnidadeProvider unidades={unidades}>
       <div className="h-screen bg-background">
         <div className="flex h-screen w-full overflow-hidden bg-card">
           <aside className="hidden w-64 shrink-0 flex-col border-r border-border lg:flex">
             <LogoPolibrilho />
             <div className="flex-1 overflow-y-auto px-3 py-3">
-              <NavList isAdmin={isAdmin} />
+              <NavList usuario={usuario} />
             </div>
             <div className="border-t border-border px-3 py-3">
               <UsuarioMenu usuario={usuario} isAdmin={isAdmin} />

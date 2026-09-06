@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
-import { getCurrentUsuario } from "@/lib/auth/current-user";
+import { exigirPermissao } from "@/lib/auth/current-user";
+import { podeEditarAba } from "@/lib/abas";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { ServicosList } from "@/components/servicos/servicos-list";
 
 export default async function ServicosPage() {
-  const usuario = await getCurrentUsuario();
-  const isAdmin = usuario.perfil === "administrador";
+  const usuario = await exigirPermissao("catalogo");
+  const isAdmin = podeEditarAba(usuario, "catalogo");
 
   const supabase = await createClient();
   const [{ data: servicos }, { data: precos }] = await Promise.all([

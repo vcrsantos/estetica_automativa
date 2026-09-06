@@ -1,5 +1,6 @@
 import { ClientesExplorer } from "@/components/clientes/clientes-explorer";
-import { getCurrentUsuario } from "@/lib/auth/current-user";
+import { exigirPermissao } from "@/lib/auth/current-user";
+import { podeEditarAba } from "@/lib/abas";
 import { searchClientes } from "@/lib/clientes/search";
 import { createClient } from "@/lib/supabase/server";
 
@@ -7,7 +8,7 @@ export default async function ClientesPage({ searchParams }: PageProps<"/cliente
   const { busca } = await searchParams;
   const termoInicial = typeof busca === "string" ? busca : "";
 
-  const usuario = await getCurrentUsuario();
+  const usuario = await exigirPermissao("clientes");
   const supabase = await createClient();
   const clientes = termoInicial
     ? await searchClientes(supabase, termoInicial, 30)
@@ -28,7 +29,7 @@ export default async function ClientesPage({ searchParams }: PageProps<"/cliente
       <ClientesExplorer
         initialClientes={clientes}
         termoInicial={termoInicial}
-        isAdmin={usuario.perfil === "administrador"}
+        isAdmin={podeEditarAba(usuario, "clientes")}
       />
     </div>
   );

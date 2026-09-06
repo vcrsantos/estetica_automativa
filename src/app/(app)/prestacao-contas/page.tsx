@@ -1,13 +1,9 @@
 import { PrestacaoContasContent } from "@/components/prestacao-contas/prestacao-contas-content";
-import { getCurrentUsuario } from "@/lib/auth/current-user";
-import { createClient } from "@/lib/supabase/server";
+import { exigirPermissao, getUnidadesDoUsuario } from "@/lib/auth/current-user";
 
 export default async function PrestacaoContasPage() {
-  const usuario = await getCurrentUsuario();
-  const supabase = await createClient();
+  await exigirPermissao("prestacao");
+  const unidades = await getUnidadesDoUsuario();
 
-  const { data: unidades } = await supabase.from("unidades").select("*").eq("ativo", true).order("nome");
-  const unidadeFixaId = usuario.perfil === "administrador" ? null : usuario.unidade_id;
-
-  return <PrestacaoContasContent unidades={unidades ?? []} unidadeFixaId={unidadeFixaId} />;
+  return <PrestacaoContasContent unidades={unidades} />;
 }

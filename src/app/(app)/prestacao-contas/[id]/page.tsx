@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 
 import { PrestacaoDetail } from "@/components/prestacao-contas/prestacao-detail";
-import { getCurrentUsuario } from "@/lib/auth/current-user";
+import { exigirPermissao } from "@/lib/auth/current-user";
+import { podeEditarAba } from "@/lib/abas";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function PrestacaoDetailPage({ params }: PageProps<"/prestacao-contas/[id]">) {
   const { id } = await params;
-  const usuario = await getCurrentUsuario();
+  const usuario = await exigirPermissao("prestacao");
   const supabase = await createClient();
 
   const { data: prestacao } = await supabase.from("prestacao_conta").select("*").eq("id", id).single();
@@ -25,7 +26,7 @@ export default async function PrestacaoDetailPage({ params }: PageProps<"/presta
     <PrestacaoDetail
       prestacao={prestacao}
       itens={itens ?? []}
-      isAdmin={usuario.perfil === "administrador"}
+      isAdmin={podeEditarAba(usuario, "prestacao")}
     />
   );
 }

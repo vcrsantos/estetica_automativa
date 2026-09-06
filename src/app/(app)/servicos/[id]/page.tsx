@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 
 import { ServicoDetail } from "@/components/servicos/servico-detail";
-import { getCurrentUsuario } from "@/lib/auth/current-user";
+import { exigirPermissao } from "@/lib/auth/current-user";
+import { podeEditarAba } from "@/lib/abas";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ServicoDetailPage({ params }: PageProps<"/servicos/[id]">) {
   const { id } = await params;
-  const usuario = await getCurrentUsuario();
+  const usuario = await exigirPermissao("catalogo");
   const supabase = await createClient();
 
   const [{ data: servico }, { data: unidades }, { data: precos }] = await Promise.all([
@@ -24,7 +25,7 @@ export default async function ServicoDetailPage({ params }: PageProps<"/servicos
       servico={servico}
       unidades={unidades ?? []}
       precos={precos ?? []}
-      isAdmin={usuario.perfil === "administrador"}
+      isAdmin={podeEditarAba(usuario, "catalogo")}
     />
   );
 }

@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 
 import { OrdemDetail } from "@/components/ordens/ordem-detail";
+import { exigirPermissao } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function OrdemDetailPage({ params }: PageProps<"/ordens/[id]">) {
+  await exigirPermissao("servicos");
   const { id } = await params;
   const supabase = await createClient();
 
