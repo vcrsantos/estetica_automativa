@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Clock } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { AuthCardShell } from "@/components/auth/auth-card-shell";
 import { SairButton } from "@/components/auth/sair-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -35,18 +36,20 @@ export default async function AguardandoPage() {
   }
 
   return (
-    <Card>
-      <CardHeader className="items-center text-center">
-        <Clock className="size-8 text-muted-foreground" />
-        <CardTitle>Acesso em análise</CardTitle>
-        <CardDescription>
-          Seu cadastro foi recebido. Assim que um administrador liberar seu acesso,
-          você poderá entrar normalmente.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <SairButton />
-      </CardContent>
-    </Card>
+    <AuthCardShell>
+      <Card>
+        <CardHeader className="items-center text-center">
+          <Clock className="size-8 text-muted-foreground" />
+          <CardTitle>Acesso em análise</CardTitle>
+          <CardDescription>
+            Seu cadastro foi recebido. Assim que um administrador liberar seu acesso,
+            você poderá entrar normalmente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SairButton />
+        </CardContent>
+      </Card>
+    </AuthCardShell>
   );
 }

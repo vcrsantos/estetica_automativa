@@ -112,7 +112,7 @@ export function CadastroForm() {
               id="email"
               type="email"
               autoComplete="email"
-              placeholder="voce@polibrilho.com.br"
+              placeholder="Digite seu e-mail"
               {...register("email")}
             />
             {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}

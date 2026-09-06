@@ -133,6 +133,36 @@
   --gradient-cta: linear-gradient(100deg, #ffd600 0%, #ffc400 48%, #d4a017 100%);
 }
 
+/*
+ * Telas de autenticação (login, cadastro, recuperar/atualizar senha,
+ * aguardando, sem-acesso) usam uma identidade visual própria e fixa —
+ * definida em Tela_Login_Polibrilho.md — independente do tema claro/escuro
+ * do resto do app. Por isso este bloco não tem variante `.dark`: as
+ * variáveis abaixo sempre vencem dentro de `.auth-theme`, não importa se
+ * `.dark` também estiver marcado em algum ancestral.
+ */
+.auth-theme {
+  --background: #fcfaf5;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #f5c400;
+  --primary-foreground: #111111;
+  --secondary: #fff4bf;
+  --secondary-foreground: #111111;
+  --muted: #fff4bf;
+  --muted-foreground: #667085;
+  --accent: #fff4bf;
+  --accent-foreground: #a67f00;
+  --destructive: #d92d20;
+  --border: #e4e7ec;
+  --input: #e4e7ec;
+  --ring: #f5c400;
+  --radius: 0.75rem;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
