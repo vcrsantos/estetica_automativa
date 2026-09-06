@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UnidadeProvider, useUnidade } from "@/components/providers/unidade-provider";
-import type { Unidade, Usuario } from "@/types/database";
+import type { DashboardResumo, Unidade, Usuario } from "@/types/database";
 
 type Icone = React.ComponentType<{ className?: string }>;
 
@@ -57,7 +57,15 @@ const NAV_ITEMS: NavEntrada[] = [
       { href: "/servicos", label: "Catálogo" },
     ],
   },
-  { tipo: "link", href: "/fila-do-dia", label: "Serviços", icon: ClipboardList },
+  {
+    tipo: "grupo",
+    label: "Serviços",
+    icon: ClipboardList,
+    itens: [
+      { href: "/fila-do-dia", label: "Fila do dia" },
+      { href: "/ordens", label: "Histórico" },
+    ],
+  },
   {
     tipo: "grupo",
     label: "Ações",
@@ -80,8 +88,87 @@ function grupoAtivo(pathname: string, grupo: NavGrupo) {
   return grupo.itens.some((i) => leafAtivo(pathname, i.href));
 }
 
+// Quantidade de OS ainda não finalizadas (fila do dia) — usada pra mostrar a
+// bolinha de notificação em "Serviços", como no WhatsApp.
+function useOsPendentesCount() {
+  const { unidadeSelecionadaId } = useUnidade();
+  const [quantidade, setQuantidade] = React.useState(0);
+
+  React.useEffect(() => {
+    let cancelado = false;
+
+    async function carregar() {
+      const supabase = createClient();
+      let query = supabase
+        .from("ordens_servico")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["agendado", "em_execucao"]);
+
+      if (unidadeSelecionadaId) {
+        query = query.eq("unidade_id", unidadeSelecionadaId);
+      }
+
+      const { count } = await query;
+      if (!cancelado) setQuantidade(count ?? 0);
+    }
+
+    carregar();
+    const intervalo = setInterval(carregar, 30_000);
+    return () => {
+      cancelado = true;
+      clearInterval(intervalo);
+    };
+  }, [unidadeSelecionadaId]);
+
+  return quantidade;
+}
+
+// Alerta (bolinha) de clientes há mais de 15 dias sem atendimento — mesmo
+// dado que já aparece no card "Clientes inativos" do dashboard.
+function useClientesInativosCount() {
+  const { unidadeSelecionadaId } = useUnidade();
+  const [quantidade, setQuantidade] = React.useState(0);
+
+  React.useEffect(() => {
+    let cancelado = false;
+
+    async function carregar() {
+      const supabase = createClient();
+      const { data } = await supabase.rpc("dashboard_resumo", {
+        p_unidade_id: unidadeSelecionadaId,
+      });
+      if (!cancelado && data) setQuantidade((data as DashboardResumo).clientes_inativos ?? 0);
+    }
+
+    carregar();
+    const intervalo = setInterval(carregar, 60_000);
+    return () => {
+      cancelado = true;
+      clearInterval(intervalo);
+    };
+  }, [unidadeSelecionadaId]);
+
+  return quantidade;
+}
+
+function NavBadge({ quantidade }: { quantidade: number }) {
+  if (quantidade <= 0) return null;
+  return (
+    <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[image:var(--gradient-cta)] px-1 text-[10px] leading-none font-semibold text-[#101314]">
+      {quantidade > 9 ? "9+" : quantidade}
+    </span>
+  );
+}
+
+function NavDot({ ativo }: { ativo: boolean }) {
+  if (!ativo) return null;
+  return <span className="size-2 rounded-full bg-[image:var(--gradient-cta)]" />;
+}
+
 function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const pendentes = useOsPendentesCount();
+  const clientesInativos = useClientesInativosCount();
   const [gruposAlternadosManual, setGruposAlternadosManual] = React.useState<Set<string>>(
     () => new Set()
   );
@@ -129,6 +216,8 @@ function NavList({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () =>
               >
                 <Icon className={cn("size-4.5", ativo && "text-primary")} />
                 {item.label}
+                {item.label === "Serviços" && <NavBadge quantidade={pendentes} />}
+                {item.label === "Ações" && <NavDot ativo={clientesInativos > 0} />}
                 <ChevronDown
                   className={cn("ml-auto size-3.5 transition-transform", aberto && "rotate-180")}
                 />
@@ -269,12 +358,12 @@ function UsuarioMenu({
             <button
               type="button"
               aria-label="Menu do usuário"
-              className="flex min-w-14 flex-col items-center gap-0.5 rounded-full px-3 py-2 text-[10px] font-medium text-muted-foreground transition-colors data-popup-open:bg-foreground/10 data-popup-open:text-primary"
+              className="flex min-w-14 flex-col items-center gap-0.5 rounded-full px-3 py-2 text-[10px] font-medium text-muted-foreground transition-colors data-popup-open:bg-[#FFF4CC] data-popup-open:text-[#7A5C00] dark:data-popup-open:bg-[#FFD400]/14 dark:data-popup-open:text-[#FFD400]"
             />
           }
         >
           <Avatar size="sm" className="size-5">
-            <AvatarFallback className="bg-primary text-[10px] font-bold text-primary-foreground">
+            <AvatarFallback className="bg-foreground/[0.06] text-[10px] font-medium text-foreground/70 ring-1 ring-foreground/15 dark:bg-foreground/[0.12] dark:ring-foreground/25">
               {iniciais}
             </AvatarFallback>
           </Avatar>
@@ -345,7 +434,31 @@ function UsuarioMenu({
   );
 }
 
-function MobileBottomNavItem({ item, pathname }: { item: NavEntrada; pathname: string }) {
+function MobileBottomNavIcon({ Icon, badge }: { Icon: Icone; badge?: number | boolean }) {
+  if (!badge) return <Icon className="size-5" />;
+  return (
+    <span className="relative">
+      <Icon className="size-5" />
+      {typeof badge === "number" ? (
+        <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[image:var(--gradient-cta)] px-0.5 text-[9px] leading-none font-bold text-[#101314] ring-2 ring-popover">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      ) : (
+        <span className="absolute top-0 right-0 size-2 rounded-full bg-[image:var(--gradient-cta)] ring-2 ring-popover" />
+      )}
+    </span>
+  );
+}
+
+function MobileBottomNavItem({
+  item,
+  pathname,
+  badge,
+}: {
+  item: NavEntrada;
+  pathname: string;
+  badge?: number | boolean;
+}) {
   const Icon = item.icon;
 
   if (item.tipo === "grupo") {
@@ -358,13 +471,14 @@ function MobileBottomNavItem({ item, pathname }: { item: NavEntrada; pathname: s
             <button
               type="button"
               className={cn(
-                "flex min-w-14 flex-col items-center gap-0.5 rounded-full px-3 py-2 text-[10px] font-medium transition-colors data-popup-open:bg-foreground/10 data-popup-open:text-primary",
-                ativo ? "bg-foreground/10 text-primary" : "text-muted-foreground"
+                "flex min-w-14 flex-col items-center gap-0.5 rounded-full px-3 py-2 text-[10px] font-medium transition-colors data-popup-open:bg-[#FFF4CC] data-popup-open:text-[#7A5C00] dark:data-popup-open:bg-[#FFD400]/14 dark:data-popup-open:text-[#FFD400]",
+                ativo && "bg-[#FFF4CC] text-[#7A5C00] dark:bg-[#FFD400]/14 dark:text-[#FFD400]",
+                !ativo && "text-muted-foreground"
               )}
             />
           }
         >
-          <Icon className="size-5" />
+          <MobileBottomNavIcon Icon={Icon} badge={badge} />
           {item.label}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="center" side="top" sideOffset={12} className="w-44 bg-popover/90">
@@ -390,7 +504,9 @@ function MobileBottomNavItem({ item, pathname }: { item: NavEntrada; pathname: s
       href={item.href}
       className={cn(
         "flex min-w-14 flex-col items-center gap-0.5 rounded-full px-3 py-2 text-[10px] font-medium transition-colors",
-        ativo ? "bg-foreground/10 text-primary" : "text-muted-foreground"
+        ativo
+          ? "bg-[#FFF4CC] text-[#7A5C00] dark:bg-[#FFD400]/14 dark:text-[#FFD400]"
+          : "text-muted-foreground"
       )}
     >
       <Icon className="size-5" />
@@ -401,6 +517,8 @@ function MobileBottomNavItem({ item, pathname }: { item: NavEntrada; pathname: s
 
 function MobileBottomNav({ isAdmin, usuario }: { isAdmin: boolean; usuario: Usuario }) {
   const pathname = usePathname();
+  const pendentes = useOsPendentesCount();
+  const clientesInativos = useClientesInativosCount();
   // Financeiro fica dentro do menu "Você" no mobile (junto com Sair) em vez de
   // ocupar um slot na cápsula; por isso itens adminOnly não entram aqui.
   const itensVisiveis = NAV_ITEMS.filter((item) => item.tipo !== "link" || !item.adminOnly);
@@ -408,28 +526,42 @@ function MobileBottomNav({ isAdmin, usuario }: { isAdmin: boolean; usuario: Usua
   const primeiraMetade = itensVisiveis.slice(0, meio);
   const segundaMetade = itensVisiveis.slice(meio);
 
+  function badgeDoItem(item: NavEntrada): number | boolean | undefined {
+    if (item.label === "Serviços") return pendentes;
+    if (item.label === "Ações") return clientesInativos > 0;
+    return undefined;
+  }
+
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),0.875rem)] lg:hidden"
       aria-label="Navegação principal"
     >
-      <div className="flex items-center gap-0.5 rounded-full border border-border bg-popover/90 p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+      <div className="flex items-center gap-1 rounded-full border border-border bg-popover/90 p-2 shadow-sm">
         {primeiraMetade.map((item) => (
-          <MobileBottomNavItem key={item.tipo === "grupo" ? item.label : item.href} item={item} pathname={pathname} />
+          <MobileBottomNavItem
+            key={item.tipo === "grupo" ? item.label : item.href}
+            item={item}
+            pathname={pathname}
+            badge={badgeDoItem(item)}
+          />
         ))}
 
         <Link
           href="/ordens/novo"
           aria-label="Nova ordem de serviço"
-          className="flex items-center justify-center px-2 py-2 transition-colors"
+          className="flex size-14 shrink-0 -translate-y-4 items-center justify-center rounded-full bg-[image:var(--gradient-cta)] text-[#101314] shadow-[0_0_0_6px_var(--background)] transition-transform active:scale-95"
         >
-          <span className="flex size-10 items-center justify-center rounded-full bg-[image:var(--gradient-cta)] text-[#101314] shadow-sm">
-            <Plus className="size-5" />
-          </span>
+          <Plus className="size-6" />
         </Link>
 
         {segundaMetade.map((item) => (
-          <MobileBottomNavItem key={item.tipo === "grupo" ? item.label : item.href} item={item} pathname={pathname} />
+          <MobileBottomNavItem
+            key={item.tipo === "grupo" ? item.label : item.href}
+            item={item}
+            pathname={pathname}
+            badge={badgeDoItem(item)}
+          />
         ))}
 
         <UsuarioMenu usuario={usuario} isAdmin={isAdmin} variant="compact" />

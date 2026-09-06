@@ -279,7 +279,7 @@ export function GerarReciboRapidoDialog({
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3 rounded-lg bg-green-50 p-3 dark:bg-green-500/10">
               <Avatar size="lg">
-                <AvatarFallback className="bg-amber-100 font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-400">
+                <AvatarFallback className="bg-[#FDF3E0] font-semibold text-[#7A5C00] dark:bg-[#7A5C00]/20 dark:text-[#FFD600]">
                   {iniciais(recibo.tomador_snapshot.nome_exibicao)}
                 </AvatarFallback>
               </Avatar>

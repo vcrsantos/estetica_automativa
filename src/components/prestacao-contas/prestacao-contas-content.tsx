@@ -449,7 +449,7 @@ function HistoricoPrestacoes() {
         <Card>
           <CardContent className="py-4">
             <p className="text-xs text-muted-foreground uppercase">Em aberto</p>
-            <p className="text-xl font-semibold text-amber-600 dark:text-amber-400">
+            <p className="text-xl font-semibold text-primary">
               {formatarMoeda(totalAberto)}
             </p>
           </CardContent>

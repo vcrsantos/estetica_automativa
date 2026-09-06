@@ -42,7 +42,7 @@ const STATUS_LABELS: Record<PrestacaoStatus, string> = {
 };
 
 const STATUS_PILL_CLASS: Record<PrestacaoStatus, string> = {
-  aberto: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400",
+  aberto: "bg-[#FDF3E0] text-[#7A5C00] dark:bg-[#7A5C00]/15 dark:text-[#FFD600]",
   pago: "bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400",
   cancelado: "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400",
 };
