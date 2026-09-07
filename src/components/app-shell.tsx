@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
+  Calendar,
   ChevronDown,
   ClipboardList,
   LayoutDashboard,
   LogOut,
+  MoreHorizontal,
   Plus,
   UserCog,
   Users,
@@ -57,12 +59,14 @@ type NavGrupo = {
   tipo: "grupo";
   label: string;
   icon: Icone;
-  itens: { href: string; label: string; aba: AbaSlug }[];
+  /** `adminOnly` aqui é só usado pelo submenu "Mais" (mobile) — mesma regra do NavLink. */
+  itens: { href: string; label: string; aba?: AbaSlug; adminOnly?: boolean }[];
 };
 type NavEntrada = NavLink | NavGrupo;
 
 const NAV_ITEMS: NavEntrada[] = [
   { tipo: "link", href: "/", label: "Dashboard", icon: LayoutDashboard, aba: "dashboard" },
+  { tipo: "link", href: "/agenda", label: "Agenda", icon: Calendar, aba: "agenda" },
   {
     tipo: "grupo",
     label: "Cadastros",
@@ -241,7 +245,10 @@ function NavList({ usuario, onNavigate }: { usuario: Usuario; onNavigate?: () =>
 
   const itensVisiveis = NAV_ITEMS.map((item) =>
     item.tipo === "grupo"
-      ? { ...item, itens: item.itens.filter((sub) => podeVerAba(usuario, sub.aba)) }
+      ? {
+          ...item,
+          itens: item.itens.filter((sub) => (!sub.adminOnly || isAdmin) && podeVerAba(usuario, sub.aba)),
+        }
       : item
   ).filter((item) => {
     if (item.tipo === "grupo") return item.itens.length > 0;
@@ -290,13 +297,16 @@ function NavList({ usuario, onNavigate }: { usuario: Usuario; onNavigate?: () =>
                       href={sub.href}
                       onClick={onNavigate}
                       className={cn(
-                        "rounded-lg px-3 py-2 text-sm transition-colors",
+                        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                         leafAtivo(pathname, sub.href)
                           ? "font-medium text-primary"
                           : "text-muted-foreground hover:bg-accent hover:text-foreground"
                       )}
                     >
                       {sub.label}
+                      {sub.href === "/reativacao" && clientesInativos > 0 && (
+                        <span className="size-1.5 shrink-0 rounded-full bg-[image:var(--gradient-cta)]" />
+                      )}
                     </Link>
                   ))}
                 </div>
@@ -393,7 +403,6 @@ function UsuarioMenu({
 }) {
   const router = useRouter();
   const [saindo, setSaindo] = React.useState(false);
-  const usuariosPendentes = useUsuariosPendentesCount();
 
   async function handleSignOut() {
     setSaindo(true);
@@ -440,28 +449,6 @@ function UsuarioMenu({
             <DropdownMenuLabel>{usuario.nome}</DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          {(podeVerAba(usuario, "financeiro") || isAdmin) && (
-            <>
-              {podeVerAba(usuario, "financeiro") && (
-                <DropdownMenuItem render={<Link href="/financeiro" />}>
-                  <Wallet className="size-4" />
-                  Financeiro
-                </DropdownMenuItem>
-              )}
-              {isAdmin && (
-                <DropdownMenuItem render={<Link href="/usuarios" />}>
-                  <UserCog className="size-4" />
-                  Usuários
-                  {usuariosPendentes > 0 && (
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {usuariosPendentes}
-                    </span>
-                  )}
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-            </>
-          )}
           <DropdownMenuItem disabled={saindo} onClick={handleSignOut} variant="destructive">
             <LogOut className="size-4" />
             Sair
@@ -514,7 +501,10 @@ function MobileBottomNavIcon({ Icon, badge }: { Icon: Icone; badge?: number | bo
     <span className="relative">
       <Icon className="size-5" />
       {typeof badge === "number" ? (
-        <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[image:var(--gradient-cta)] px-0.5 text-[9px] leading-none font-bold text-[#101314] ring-2 ring-popover">
+        <span
+          className="absolute -top-2 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border-2 px-0.5 text-[9px] leading-none font-bold ring-2 ring-popover"
+          style={{ borderColor: "#F5B800", backgroundColor: "#F5B8001f", color: "#835F00" }}
+        >
           {badge > 9 ? "9+" : badge}
         </span>
       ) : (
@@ -528,10 +518,14 @@ function MobileBottomNavItem({
   item,
   pathname,
   badge,
+  clientesInativos,
+  usuariosPendentes,
 }: {
   item: NavEntrada;
   pathname: string;
   badge?: number | boolean;
+  clientesInativos?: number;
+  usuariosPendentes?: number;
 }) {
   const Icon = item.icon;
 
@@ -560,9 +554,18 @@ function MobileBottomNavItem({
             <DropdownMenuItem
               key={sub.href}
               render={<Link href={sub.href} />}
-              className={leafAtivo(pathname, sub.href) ? "font-medium text-primary" : undefined}
+              className={cn(
+                "justify-between",
+                leafAtivo(pathname, sub.href) && "font-medium text-primary"
+              )}
             >
               {sub.label}
+              {sub.href === "/reativacao" && !!clientesInativos && clientesInativos > 0 && (
+                <span className="size-1.5 shrink-0 rounded-full bg-[image:var(--gradient-cta)]" />
+              )}
+              {sub.href === "/usuarios" && !!usuariosPendentes && usuariosPendentes > 0 && (
+                <span className="ml-auto text-xs text-muted-foreground">{usuariosPendentes}</span>
+              )}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -589,17 +592,50 @@ function MobileBottomNavItem({
   );
 }
 
+/** Só a cápsula do celular usa essa reorganização — a sidebar do desktop
+ * continua lendo NAV_ITEMS direto, sem o grupo "Mais". */
+function montarItensMobile(): NavEntrada[] {
+  const grupo = (label: string) => {
+    const item = NAV_ITEMS.find((i) => i.tipo === "grupo" && i.label === label);
+    return item && item.tipo === "grupo" ? item : null;
+  };
+  const link = (label: string) => {
+    const item = NAV_ITEMS.find((i) => i.tipo === "link" && i.label === label);
+    return item && item.tipo === "link" ? item : null;
+  };
+
+  const cadastros = grupo("Cadastros");
+  const servicos = grupo("Serviços");
+  const acoes = grupo("Ações");
+  const dashboard = link("Dashboard");
+  const agenda = link("Agenda");
+
+  const grupoMais: NavGrupo = {
+    tipo: "grupo",
+    label: "Mais",
+    icon: MoreHorizontal,
+    itens: [
+      ...(cadastros?.itens ?? []),
+      { href: "/financeiro", label: "Financeiro", aba: "financeiro" },
+      { href: "/usuarios", label: "Usuários", adminOnly: true },
+    ],
+  };
+
+  return [dashboard, agenda, servicos, acoes, grupoMais].filter((item): item is NavEntrada => item !== null);
+}
+
 function MobileBottomNav({ isAdmin, usuario }: { isAdmin: boolean; usuario: Usuario }) {
   const pathname = usePathname();
   const pendentes = useOsPendentesCount();
   const clientesInativos = useClientesInativosCount();
-  // Financeiro e Usuários ficam dentro do menu "Você" no mobile (junto com
-  // Sair) em vez de ocupar um slot na cápsula — por isso saem daqui sempre,
-  // independente de quem pode vê-los.
-  const itensVisiveis = NAV_ITEMS.filter((item) => item.label !== "Financeiro" && item.label !== "Usuários")
+  const usuariosPendentes = useUsuariosPendentesCount();
+  const itensVisiveis = montarItensMobile()
     .map((item) =>
       item.tipo === "grupo"
-        ? { ...item, itens: item.itens.filter((sub) => podeVerAba(usuario, sub.aba)) }
+        ? {
+            ...item,
+            itens: item.itens.filter((sub) => (!sub.adminOnly || isAdmin) && podeVerAba(usuario, sub.aba)),
+          }
         : item
     )
     .filter((item) => item.tipo !== "grupo" || item.itens.length > 0)
@@ -611,6 +647,7 @@ function MobileBottomNav({ isAdmin, usuario }: { isAdmin: boolean; usuario: Usua
   function badgeDoItem(item: NavEntrada): number | boolean | undefined {
     if (item.label === "Serviços") return pendentes;
     if (item.label === "Ações") return clientesInativos > 0;
+    if (item.label === "Mais") return usuariosPendentes > 0;
     return undefined;
   }
 
@@ -626,6 +663,8 @@ function MobileBottomNav({ isAdmin, usuario }: { isAdmin: boolean; usuario: Usua
             item={item}
             pathname={pathname}
             badge={badgeDoItem(item)}
+            clientesInativos={clientesInativos}
+            usuariosPendentes={usuariosPendentes}
           />
         ))}
 
@@ -643,6 +682,8 @@ function MobileBottomNav({ isAdmin, usuario }: { isAdmin: boolean; usuario: Usua
             item={item}
             pathname={pathname}
             badge={badgeDoItem(item)}
+            clientesInativos={clientesInativos}
+            usuariosPendentes={usuariosPendentes}
           />
         ))}
 

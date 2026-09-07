@@ -3,10 +3,28 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, MessageCircle, Pencil, PlayCircle, Plus, Trash2, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Car,
+  Check,
+  CheckCircle2,
+  Loader2,
+  MessageCircle,
+  Pencil,
+  PlayCircle,
+  Plus,
+  Save,
+  Sparkles,
+  Trash2,
+  User,
+  Wallet,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import { linkWhatsApp } from "@/lib/whatsapp";
 import {
   FORMA_PAGAMENTO_LABELS,
@@ -26,10 +44,10 @@ import type {
   Unidade,
   Veiculo,
 } from "@/types/database";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -46,13 +64,101 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const STATUS_BADGE_VARIANT: Record<StatusOs, "info" | "outline" | "destructive" | "success"> = {
-  agendado: "outline",
-  em_execucao: "info",
-  finalizado: "success",
-  entregue: "success",
-  cancelado: "destructive",
+type CorEtapa = { cor: string; corSuave: string; corTexto: string; icon: typeof Calendar };
+
+/** Mesma paleta semântica da Fila do dia — mantém as duas telas consistentes. */
+const CORES_ETAPA: Record<"agendado" | "em_execucao" | "finalizado", CorEtapa> = {
+  agendado: { cor: "#F5B800", corSuave: "#FFF8DC", corTexto: "#835F00", icon: Calendar },
+  em_execucao: { cor: "#2D72E8", corSuave: "#EDF4FF", corTexto: "#1D56AD", icon: PlayCircle },
+  finalizado: { cor: "#20A36A", corSuave: "#EAF8F1", corTexto: "#16764C", icon: CheckCircle2 },
 };
+const DANGER = { cor: "#D73C3C", corSuave: "#FFF0F0", corTexto: "#AD2929" };
+
+/** "Entregue" já saiu da fila ativa — visualmente é a mesma etapa final "Finalizado". */
+function etapaEfetiva(status: StatusOs): "agendado" | "em_execucao" | "finalizado" {
+  if (status === "entregue") return "finalizado";
+  if (status === "agendado" || status === "em_execucao" || status === "finalizado") return status;
+  return "finalizado";
+}
+
+const ORDEM_ETAPAS: ("agendado" | "em_execucao" | "finalizado")[] = [
+  "agendado",
+  "em_execucao",
+  "finalizado",
+];
+
+function situacaoEtapa(etapa: StatusOs, statusAtual: StatusOs) {
+  const idxAtual = ORDEM_ETAPAS.indexOf(etapaEfetiva(statusAtual));
+  const idxEtapa = ORDEM_ETAPAS.indexOf(etapa as (typeof ORDEM_ETAPAS)[number]);
+  if (idxEtapa < idxAtual) return "concluido" as const;
+  if (idxEtapa === idxAtual) return "atual" as const;
+  if (idxEtapa === idxAtual + 1) return "proxima" as const;
+  return "depois" as const;
+}
+
+function formatarMoeda(valor: number) {
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function IndicadorAndamento({ status }: { status: StatusOs }) {
+  return (
+    <div className="flex flex-col gap-2 rounded-[14px] border border-border bg-card p-3 md:flex-row md:items-center md:gap-0 md:p-4">
+      {ORDEM_ETAPAS.map((etapa, index) => {
+        const config = CORES_ETAPA[etapa];
+        const Icon = config.icon;
+        const situacao = situacaoEtapa(etapa, status);
+        const destaque = situacao === "concluido" || situacao === "atual";
+        const textoSituacao =
+          situacao === "concluido"
+            ? "Concluído"
+            : situacao === "atual"
+              ? "Atual"
+              : situacao === "proxima"
+                ? "Próxima"
+                : "Depois";
+
+        return (
+          <React.Fragment key={etapa}>
+            <div
+              aria-current={situacao === "atual" ? "step" : undefined}
+              className={cn(
+                "flex items-center gap-2.5 rounded-[10px] px-2 py-1.5 md:flex-1 md:justify-center",
+                situacao === "atual" && "border-l-4 md:border-l-0 md:border-t-4"
+              )}
+              style={
+                situacao === "atual"
+                  ? { backgroundColor: config.corSuave, borderColor: config.cor }
+                  : undefined
+              }
+            >
+              <span
+                className="flex size-7 shrink-0 items-center justify-center rounded-full"
+                style={{
+                  backgroundColor: destaque ? config.corSuave : "var(--muted)",
+                  color: destaque ? config.corTexto : "var(--muted-foreground)",
+                }}
+              >
+                <Icon className="size-4" />
+              </span>
+              <div className="flex flex-col leading-tight">
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: destaque ? config.corTexto : undefined }}
+                >
+                  {STATUS_OS_LABELS[etapa]}
+                </span>
+                <span className="text-xs text-muted-foreground">{textoSituacao}</span>
+              </div>
+            </div>
+            {index < ORDEM_ETAPAS.length - 1 && (
+              <div className="mx-1 hidden h-px flex-1 bg-border md:block" />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
 
 export function OrdemDetail({
   os: osInicial,
@@ -160,11 +266,11 @@ export function OrdemDetail({
 
     setSalvandoStatus(false);
     if (error || !data) {
-      toast.error("Não foi possível atualizar o status.");
+      toast.error(`Não foi possível atualizar a OS #${os.numero}. A alteração não foi concluída.`);
       return;
     }
     setOs(data);
-    toast.success(`Status atualizado para "${STATUS_OS_LABELS[novoStatus]}".`);
+    toast.success(`OS #${os.numero} atualizada para ${STATUS_OS_LABELS[novoStatus]}.`);
   }
 
   async function cancelar() {
@@ -191,6 +297,9 @@ export function OrdemDetail({
     toast.success("OS cancelada.");
   }
 
+  const pagamentoAlterado =
+    formaPagamento !== (os.forma_pagamento ?? "nenhuma") || statusPagamento !== os.status_pagamento;
+
   async function salvarPagamento() {
     setSalvandoPagamento(true);
     const supabase = createClient();
@@ -206,7 +315,7 @@ export function OrdemDetail({
 
     setSalvandoPagamento(false);
     if (error || !data) {
-      toast.error("Não foi possível salvar o pagamento.");
+      toast.error("Não foi possível salvar o pagamento. Tente novamente.");
       return;
     }
     setOs(data);
@@ -320,88 +429,157 @@ export function OrdemDetail({
 
   const mensagemPronto = `Oi, ${cliente.nome.split(" ")[0]}! Seu ${veiculo?.modelo || veiculo?.placa || "veículo"} está pronto na POLIBRILHO ${unidade.nome}. Pode vir buscar quando quiser!`;
 
+  const etapaAtual = CORES_ETAPA[etapaEfetiva(os.status)];
+  const podeVoltarFila = os.status === "agendado" || os.status === "em_execucao" || os.status === "finalizado";
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="flex flex-col gap-5">
+      <Link
+        href="/fila-do-dia"
+        className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" />
+        Voltar para a fila do dia
+      </Link>
+
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">OS #{os.numero}</h1>
-            <Badge variant={STATUS_BADGE_VARIANT[os.status]}>{STATUS_OS_LABELS[os.status]}</Badge>
+            {os.status === "cancelado" ? (
+              <span
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
+                style={{ backgroundColor: DANGER.corSuave, color: DANGER.corTexto }}
+              >
+                <XCircle className="size-3.5" />
+                Cancelada
+              </span>
+            ) : (
+              <span
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
+                style={{ backgroundColor: etapaAtual.corSuave, color: etapaAtual.corTexto }}
+              >
+                <etapaAtual.icon className="size-3.5" />
+                {STATUS_OS_LABELS[os.status]}
+              </span>
+            )}
             {os.status !== "cancelado" && <StatusPagamentoBadge status={os.status_pagamento} />}
           </div>
-          <p className="text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             {unidade.nome} · aberta em{" "}
             {new Date(os.entrada_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {os.status === "agendado" && (
-            <Button disabled={salvandoStatus} onClick={() => mudarStatus("em_execucao")}>
-              {salvandoStatus ? <Loader2 className="size-4 animate-spin" /> : <PlayCircle className="size-4" />}
-              Iniciar execução
-            </Button>
-          )}
-          {os.status === "em_execucao" && (
-            <Button disabled={salvandoStatus} onClick={() => mudarStatus("finalizado")}>
-              {salvandoStatus ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-              Finalizar
-            </Button>
-          )}
-          {os.status === "finalizado" && (
-            <Button disabled={salvandoStatus} onClick={() => mudarStatus("entregue")}>
-              {salvandoStatus ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-              Marcar como entregue
-            </Button>
-          )}
-          {(os.status === "finalizado" || os.status === "entregue") && cliente.telefone && (
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={
-                <a href={linkWhatsApp(cliente.telefone, mensagemPronto)} target="_blank" rel="noopener noreferrer" />
-              }
-            >
-              <MessageCircle className="size-4" />
-              Avisar cliente
-            </Button>
-          )}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap gap-2">
+            {os.status === "agendado" && (
+              <Button disabled={salvandoStatus} onClick={() => mudarStatus("em_execucao")}>
+                {salvandoStatus ? <Loader2 className="size-4 animate-spin" /> : <PlayCircle className="size-4" />}
+                {salvandoStatus ? "Iniciando..." : "Iniciar execução"}
+              </Button>
+            )}
+            {os.status === "em_execucao" && (
+              <Button disabled={salvandoStatus} onClick={() => mudarStatus("finalizado")}>
+                {salvandoStatus ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+                {salvandoStatus ? "Finalizando..." : "Finalizar serviço"}
+              </Button>
+            )}
+            {os.status === "finalizado" && (
+              <Button disabled={salvandoStatus} onClick={() => mudarStatus("entregue")}>
+                {salvandoStatus ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+                Marcar como entregue
+              </Button>
+            )}
+            {os.status === "entregue" && (
+              <Button disabled variant="outline">
+                <CheckCircle2 className="size-4" />
+                Serviço finalizado
+              </Button>
+            )}
+            {(os.status === "finalizado" || os.status === "entregue") && cliente.telefone && (
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={
+                  <a href={linkWhatsApp(cliente.telefone, mensagemPronto)} target="_blank" rel="noopener noreferrer" />
+                }
+              >
+                <MessageCircle className="size-4" />
+                Avisar cliente
+              </Button>
+            )}
+          </div>
+
           {os.status !== "cancelado" && os.status !== "entregue" && (
-            <Button variant="ghost" className="text-destructive" onClick={() => setDialogCancelarAberto(true)}>
-              <XCircle className="size-4" />
-              Cancelar
-            </Button>
+            <>
+              <div className="hidden h-6 w-px bg-border sm:block" />
+              <Button variant="ghost" className="text-destructive" onClick={() => setDialogCancelarAberto(true)}>
+                <XCircle className="size-4" />
+                Cancelar
+              </Button>
+            </>
           )}
         </div>
       </div>
 
       {os.status === "cancelado" && os.motivo_cancelamento && (
-        <Card className="border-destructive/50">
-          <CardContent className="py-3 text-sm">
-            <span className="font-medium">Motivo do cancelamento: </span>
-            {os.motivo_cancelamento}
-          </CardContent>
-        </Card>
+        <div
+          className="rounded-[14px] p-3 text-sm"
+          style={{ backgroundColor: DANGER.corSuave, color: DANGER.corTexto }}
+        >
+          <span className="font-medium">Motivo do cancelamento: </span>
+          {os.motivo_cancelamento}
+        </div>
       )}
 
+      {podeVoltarFila && <IndicadorAndamento status={os.status} />}
+
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
+        <Card className="gap-3 rounded-[14px] p-[18px] shadow-[0_10px_30px_rgba(25,26,24,0.06)]">
+          <CardHeader className="flex flex-row items-center justify-between p-0">
             <CardTitle>Cliente e veículo</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              render={<Link href={`/clientes/${cliente.id}`} />}
+              nativeButton={false}
+            >
+              <Pencil className="size-3.5" />
+              Editar
+            </Button>
           </CardHeader>
-          <CardContent className="flex flex-col gap-2 text-sm">
-            <Link href={`/clientes/${cliente.id}`} className="font-medium hover:underline">
-              {cliente.nome}
-            </Link>
-            <p className="text-muted-foreground">{cliente.telefone || "Sem telefone"}</p>
-            {veiculo ? (
-              <p>
-                {veiculo.placa || "Sem placa"} — {veiculo.marca} {veiculo.modelo} ·{" "}
-                {PORTE_LABELS[veiculo.porte]}
-              </p>
-            ) : (
-              <p className="text-muted-foreground">Sem veículo (atendimento externo)</p>
-            )}
+          <CardContent className="flex flex-col gap-4 p-0 text-sm">
+            <div className="flex items-start gap-2.5">
+              <User className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-xs text-muted-foreground">Cliente</p>
+                <Link href={`/clientes/${cliente.id}`} className="font-medium hover:underline">
+                  {cliente.nome}
+                </Link>
+                <p className="text-muted-foreground">{cliente.telefone || "Telefone não informado"}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5">
+              <Car className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-xs text-muted-foreground">Veículo</p>
+                {veiculo ? (
+                  <>
+                    <p className="font-medium">
+                      {veiculo.marca} {veiculo.modelo}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {veiculo.placa || "Sem placa"} · Porte {PORTE_LABELS[veiculo.porte].toLowerCase()}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-muted-foreground">Sem veículo (atendimento externo)</p>
+                )}
+              </div>
+            </div>
+
             {executoresNomes.length > 0 && (
               <p>
                 <span className="text-muted-foreground">Executor(es): </span>
@@ -417,22 +595,25 @@ export function OrdemDetail({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Serviços</CardTitle>
+        <Card className="gap-3 rounded-[14px] p-[18px] shadow-[0_10px_30px_rgba(25,26,24,0.06)]">
+          <CardHeader className="flex flex-row items-center justify-between p-0">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-muted-foreground" />
+              <CardTitle>Serviços</CardTitle>
+            </div>
             {!editandoServicos && os.status !== "cancelado" && (
               <Button
                 variant="ghost"
-                size="icon-sm"
-                aria-label="Editar serviços"
+                size="sm"
                 disabled={edicaoBloqueada}
                 onClick={iniciarEdicaoServicos}
               >
-                <Pencil className="size-4" />
+                <Pencil className="size-3.5" />
+                Editar
               </Button>
             )}
           </CardHeader>
-          <CardContent className="flex flex-col gap-2 text-sm">
+          <CardContent className="flex flex-col gap-2 p-0 text-sm">
             {edicaoBloqueada && (
               <p className="text-xs text-muted-foreground">
                 {reciboVinculado
@@ -444,29 +625,30 @@ export function OrdemDetail({
             {!editandoServicos ? (
               <>
                 {itens.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between">
-                    <span>{item.descricao}</span>
-                    <span className="flex items-center gap-1">
-                      {item.valor_praticado !== item.valor_tabela && (
-                        <span className="text-xs text-muted-foreground line-through">
-                          {item.valor_tabela.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  <div key={item.id} className="flex items-center justify-between gap-2">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="size-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
+                      <span className="truncate">{item.descricao}</span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1">
+                      {item.valor_tabela > 0 && item.valor_praticado !== item.valor_tabela && (
+                        <span className="num text-xs text-muted-foreground line-through">
+                          {formatarMoeda(item.valor_tabela)}
                         </span>
                       )}
-                      <span className="font-medium">
-                        {item.valor_praticado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                      </span>
+                      <span className="num font-medium">{formatarMoeda(item.valor_praticado)}</span>
                     </span>
                   </div>
                 ))}
                 {os.desconto > 0 && (
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span>Desconto</span>
-                    <span>- {os.desconto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                    <span className="num">- {formatarMoeda(os.desconto)}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between border-t pt-2 font-semibold">
-                  <span>Total</span>
-                  <span>{os.valor_total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                <div className="flex items-center justify-between border-t border-border pt-2.5">
+                  <span className="font-medium">Total da OS</span>
+                  <span className="num text-base font-semibold">{formatarMoeda(os.valor_total)}</span>
                 </div>
               </>
             ) : (
@@ -491,6 +673,7 @@ export function OrdemDetail({
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      aria-label="Remover item"
                       disabled={itensEdicao.length === 1}
                       onClick={() => removerItemEdicao(index)}
                     >
@@ -503,13 +686,13 @@ export function OrdemDetail({
                   Adicionar item
                 </Button>
 
-                <div className="flex items-end gap-2 border-t pt-2">
+                <div className="flex items-end gap-2 border-t border-border pt-2">
                   <div className="flex w-28 flex-col gap-1">
                     <span className="text-xs text-muted-foreground">Desconto</span>
                     <Input value={descontoEdicao} onChange={(e) => setDescontoEdicao(e.target.value)} inputMode="decimal" />
                   </div>
-                  <div className="flex flex-1 items-center justify-end font-semibold">
-                    Total: {totalEdicao.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  <div className="num flex flex-1 items-center justify-end font-semibold">
+                    Total: {formatarMoeda(totalEdicao)}
                   </div>
                 </div>
 
@@ -534,11 +717,11 @@ export function OrdemDetail({
       </div>
 
       {os.status !== "cancelado" && (
-        <Card className="max-w-md">
-          <CardHeader>
+        <Card className="gap-4 rounded-[14px] p-[18px] shadow-[0_10px_30px_rgba(25,26,24,0.06)]">
+          <CardHeader className="p-0">
             <CardTitle>Pagamento</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
+          <CardContent className="flex flex-col gap-4 p-0">
             {prestacaoVinculada && prestacaoVinculada.status === "aberto" ? (
               <p className="text-sm text-muted-foreground">
                 Pagamento controlado pela prestação{" "}
@@ -558,50 +741,101 @@ export function OrdemDetail({
                     .
                   </p>
                 )}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Select
-                    items={{ nenhuma: "A definir", ...FORMA_PAGAMENTO_LABELS }}
-                    value={formaPagamento}
-                    onValueChange={(v) => setFormaPagamento(v as FormaPagamento | "nenhuma")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Forma de pagamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nenhuma">A definir</SelectItem>
-                      {Object.entries(FORMA_PAGAMENTO_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
 
-                  <Select
-                    items={STATUS_PAGAMENTO_LABELS}
-                    value={statusPagamento}
-                    onValueChange={(v) => setStatusPagamento(v as StatusPagamento)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(STATUS_PAGAMENTO_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div
+                  className="flex items-center gap-3 rounded-[12px] p-3"
+                  style={{
+                    backgroundColor:
+                      os.status_pagamento === "pago" ? CORES_ETAPA.finalizado.corSuave : CORES_ETAPA.agendado.corSuave,
+                  }}
+                >
+                  <Wallet
+                    className="size-5 shrink-0"
+                    style={{
+                      color:
+                        os.status_pagamento === "pago"
+                          ? CORES_ETAPA.finalizado.corTexto
+                          : CORES_ETAPA.agendado.corTexto,
+                    }}
+                  />
+                  <div>
+                    <p
+                      className="text-xs"
+                      style={{
+                        color:
+                          os.status_pagamento === "pago"
+                            ? CORES_ETAPA.finalizado.corTexto
+                            : CORES_ETAPA.agendado.corTexto,
+                      }}
+                    >
+                      {os.status_pagamento === "pago" ? "Pagamento recebido" : "Valor a receber"}
+                    </p>
+                    <p
+                      className="num text-lg font-semibold"
+                      style={{
+                        color:
+                          os.status_pagamento === "pago"
+                            ? CORES_ETAPA.finalizado.corTexto
+                            : CORES_ETAPA.agendado.corTexto,
+                      }}
+                    >
+                      {formatarMoeda(os.valor_total)}
+                    </p>
+                  </div>
                 </div>
+
+                <div className="grid gap-4 sm:grid-cols-2 sm:gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="forma-pagamento">Forma de pagamento</Label>
+                    <Select
+                      items={{ nenhuma: "A definir", ...FORMA_PAGAMENTO_LABELS }}
+                      value={formaPagamento}
+                      onValueChange={(v) => setFormaPagamento(v as FormaPagamento | "nenhuma")}
+                    >
+                      <SelectTrigger id="forma-pagamento" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nenhuma">A definir</SelectItem>
+                        {Object.entries(FORMA_PAGAMENTO_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="situacao-pagamento">Situação</Label>
+                    <Select
+                      items={STATUS_PAGAMENTO_LABELS}
+                      value={statusPagamento}
+                      onValueChange={(v) => setStatusPagamento(v as StatusPagamento)}
+                    >
+                      <SelectTrigger id="situacao-pagamento" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(STATUS_PAGAMENTO_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <Button
+                  variant="gradient"
                   size="sm"
                   className="w-fit"
-                  disabled={salvandoPagamento}
+                  disabled={salvandoPagamento || !pagamentoAlterado}
                   onClick={salvarPagamento}
                 >
-                  {salvandoPagamento && <Loader2 className="size-4 animate-spin" />}
-                  Salvar pagamento
+                  {salvandoPagamento ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                  {salvandoPagamento ? "Salvando..." : "Salvar pagamento"}
                 </Button>
               </>
             )}
@@ -612,27 +846,30 @@ export function OrdemDetail({
       <Dialog open={dialogCancelarAberto} onOpenChange={setDialogCancelarAberto}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancelar OS #{os.numero}</DialogTitle>
+            <DialogTitle>Cancelar a OS #{os.numero}?</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">
-              O motivo é obrigatório e a OS é preservada no histórico (não é apagada).
+              Esta ordem será removida da fila ativa. O histórico continuará disponível. O motivo é
+              obrigatório.
             </p>
-            <Textarea
-              value={motivoCancelamento}
-              onChange={(e) => setMotivoCancelamento(e.target.value)}
-              rows={3}
-              placeholder="Motivo do cancelamento"
-              autoFocus
-            />
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="motivo-cancelamento-os">Motivo do cancelamento</Label>
+              <Textarea
+                id="motivo-cancelamento-os"
+                value={motivoCancelamento}
+                onChange={(e) => setMotivoCancelamento(e.target.value)}
+                rows={3}
+              />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialogCancelarAberto(false)}>
+            <Button variant="ghost" autoFocus onClick={() => setDialogCancelarAberto(false)}>
               Voltar
             </Button>
             <Button variant="destructive" disabled={salvandoStatus} onClick={cancelar}>
               {salvandoStatus && <Loader2 className="size-4 animate-spin" />}
-              Confirmar cancelamento
+              Cancelar OS
             </Button>
           </DialogFooter>
         </DialogContent>

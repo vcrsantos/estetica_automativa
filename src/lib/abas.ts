@@ -1,5 +1,6 @@
 export type AbaSlug =
   | "dashboard"
+  | "agenda"
   | "clientes"
   | "catalogo"
   | "servicos"
@@ -29,6 +30,7 @@ export function podeEditarAba(
 
 export const ABAS: { slug: AbaSlug; label: string }[] = [
   { slug: "dashboard", label: "Dashboard" },
+  { slug: "agenda", label: "Agenda" },
   { slug: "clientes", label: "Clientes" },
   { slug: "catalogo", label: "Catálogo (serviços e preços)" },
   { slug: "servicos", label: "Fila do dia / Histórico de OS" },
