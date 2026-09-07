@@ -539,7 +539,7 @@ function MobileBottomNavItem({
             <button
               type="button"
               className={cn(
-                "flex min-w-14 flex-col items-center gap-0.5 rounded-full px-3 py-2 text-[10px] font-medium transition-colors data-popup-open:bg-[#FFF4CC] data-popup-open:text-[#7A5C00] dark:data-popup-open:bg-[#FFD400]/14 dark:data-popup-open:text-[#FFD400]",
+                "flex min-w-11 flex-col items-center gap-0.5 rounded-full px-2 py-2 text-[10px] font-medium transition-colors data-popup-open:bg-[#FFF4CC] data-popup-open:text-[#7A5C00] dark:data-popup-open:bg-[#FFD400]/14 dark:data-popup-open:text-[#FFD400]",
                 ativo && "bg-[#FFF4CC] text-[#7A5C00] dark:bg-[#FFD400]/14 dark:text-[#FFD400]",
                 !ativo && "text-muted-foreground"
               )}
@@ -580,7 +580,7 @@ function MobileBottomNavItem({
       key={item.href}
       href={item.href}
       className={cn(
-        "flex min-w-14 flex-col items-center gap-0.5 rounded-full px-3 py-2 text-[10px] font-medium transition-colors",
+        "flex min-w-12 flex-col items-center gap-0.5 rounded-full px-2 py-2 text-[10px] font-medium transition-colors",
         ativo
           ? "bg-[#FFF4CC] text-[#7A5C00] dark:bg-[#FFD400]/14 dark:text-[#FFD400]"
           : "text-muted-foreground"
@@ -656,7 +656,7 @@ function MobileBottomNav({ isAdmin, usuario }: { isAdmin: boolean; usuario: Usua
       className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),0.875rem)] lg:hidden"
       aria-label="Navegação principal"
     >
-      <div className="flex items-center gap-1 rounded-full border border-border bg-popover/90 p-2 shadow-sm">
+      <div className="flex items-center gap-0.5 rounded-full border border-border bg-popover/90 p-2 shadow-sm">
         {primeiraMetade.map((item) => (
           <MobileBottomNavItem
             key={item.tipo === "grupo" ? item.label : item.href}
