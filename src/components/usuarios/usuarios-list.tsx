@@ -57,7 +57,7 @@ function ordemUsuarios(a: Usuario, b: Usuario) {
 export function UsuariosList({
   usuarioAtualId,
   usuarios: usuariosIniciais,
-  unidades,
+  unidades: unidadesIniciais,
   vinculos: vinculosIniciais,
 }: {
   usuarioAtualId: string;
@@ -66,9 +66,11 @@ export function UsuariosList({
   vinculos: UsuarioUnidade[];
 }) {
   const [usuarios, setUsuarios] = React.useState(usuariosIniciais);
+  const [unidades, setUnidades] = React.useState(unidadesIniciais);
   const [vinculos, setVinculos] = React.useState(vinculosIniciais);
   const [busca, setBusca] = React.useState("");
   const [editando, setEditando] = React.useState<Usuario | null>(null);
+  const [novaUnidadeAberta, setNovaUnidadeAberta] = React.useState(false);
 
   const pendentes = usuarios.filter((u) => u.status === "pendente").length;
 
@@ -96,15 +98,26 @@ export function UsuariosList({
     setEditando(null);
   }
 
+  function aoCriarUnidade(unidade: Unidade) {
+    setUnidades((atual) => [...atual, unidade].sort((a, b) => a.nome.localeCompare(b.nome)));
+    setVinculos((atual) => [...atual, { usuario_id: usuarioAtualId, unidade_id: unidade.id }]);
+    setNovaUnidadeAberta(false);
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Usuários</h1>
-        <p className="text-muted-foreground">
-          {pendentes > 0
-            ? `${pendentes} cadastro${pendentes === 1 ? "" : "s"} aguardando aprovação.`
-            : "Gerencie quem acessa o sistema, com quais papel e unidades."}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Usuários</h1>
+          <p className="text-muted-foreground">
+            {pendentes > 0
+              ? `${pendentes} cadastro${pendentes === 1 ? "" : "s"} aguardando aprovação.`
+              : "Gerencie quem acessa o sistema, com quais papel e unidades."}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setNovaUnidadeAberta(true)}>
+          Nova unidade
+        </Button>
       </div>
 
       <div className="relative max-w-xs">
@@ -183,7 +196,108 @@ export function UsuariosList({
           )}
         </SheetContent>
       </Sheet>
+
+      <NovaUnidadeSheet
+        open={novaUnidadeAberta}
+        onOpenChange={setNovaUnidadeAberta}
+        autorId={usuarioAtualId}
+        onCriada={aoCriarUnidade}
+      />
     </div>
+  );
+}
+
+function NovaUnidadeSheet({
+  open,
+  onOpenChange,
+  autorId,
+  onCriada,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  autorId: string;
+  onCriada: (unidade: Unidade) => void;
+}) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="flex flex-col gap-0 overflow-y-auto p-0">
+        {open && <NovaUnidadeForm autorId={autorId} onCriada={onCriada} />}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function NovaUnidadeForm({
+  autorId,
+  onCriada,
+}: {
+  autorId: string;
+  onCriada: (unidade: Unidade) => void;
+}) {
+  const [nome, setNome] = React.useState("");
+  const [telefone, setTelefone] = React.useState("");
+  const [endereco, setEndereco] = React.useState("");
+  const [salvando, setSalvando] = React.useState(false);
+  const [erro, setErro] = React.useState<string | null>(null);
+
+  async function salvar() {
+    if (!nome.trim()) {
+      setErro("Informe o nome da unidade.");
+      return;
+    }
+    setErro(null);
+    setSalvando(true);
+    const supabase = createClient();
+
+    const { data: unidade, error } = await supabase
+      .from("unidades")
+      .insert({ nome: nome.trim(), telefone: telefone.trim() || null, endereco: endereco.trim() || null })
+      .select("*")
+      .single();
+
+    if (error || !unidade) {
+      setSalvando(false);
+      setErro("Não foi possível criar a unidade. Tente novamente.");
+      return;
+    }
+
+    await supabase.from("usuario_unidades").insert({ usuario_id: autorId, unidade_id: unidade.id });
+
+    setSalvando(false);
+    toast.success("Unidade criada.");
+    onCriada(unidade);
+  }
+
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle>Nova unidade</SheetTitle>
+        <SheetDescription>Você é vinculado automaticamente à unidade criada.</SheetDescription>
+      </SheetHeader>
+
+      <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="nome-unidade">Nome</Label>
+          <Input id="nome-unidade" value={nome} onChange={(e) => setNome(e.target.value)} />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="telefone-unidade">Telefone</Label>
+          <Input id="telefone-unidade" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="endereco-unidade">Endereço</Label>
+          <Input id="endereco-unidade" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+        </div>
+        {erro && <p className="text-sm text-destructive">{erro}</p>}
+      </div>
+
+      <SheetFooter>
+        <Button onClick={salvar} disabled={salvando}>
+          {salvando && <Loader2 className="size-4 animate-spin" />}
+          Criar unidade
+        </Button>
+      </SheetFooter>
+    </>
   );
 }
 
