@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
+import { Maximize2 } from "lucide-react";
 import { Bar, ComposedChart, LabelList, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import type { DashboardInsights } from "@/types/database";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type PontoDiario = DashboardInsights["evolucao_diaria"][number];
 type Ponto = PontoDiario & { mediaMovel: number };
@@ -58,11 +60,40 @@ function formatarDiaCurto(diaIso: string) {
   return `${dia}/${mes}`;
 }
 
-/** Média móvel de 7 dias — usa quantos dias anteriores estiverem disponíveis quando a janela ainda não está cheia. */
+const MESES_ABREV = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+/** Tick de duas linhas no eixo X: dia em cima, mês abreviado (3 letras) embaixo. */
+function TickDiaMes({
+  x,
+  y,
+  payload,
+  cor,
+}: {
+  x?: string | number;
+  y?: string | number;
+  payload?: { value: string };
+  cor: string;
+}) {
+  if (x == null || y == null || !payload) return null;
+  const [, mes, dia] = payload.value.split("-");
+  return (
+    <g transform={`translate(${Number(x)},${Number(y)})`}>
+      <text x={0} y={0} dy={10} textAnchor="middle" fontSize={10} fill={cor}>
+        {dia}
+      </text>
+      <text x={0} y={0} dy={22} textAnchor="middle" fontSize={9} fill={cor}>
+        {MESES_ABREV[Number(mes) - 1]}
+      </text>
+    </g>
+  );
+}
+
+/** Média móvel de 7 dias — usa quantos dias anteriores estiverem disponíveis quando a janela ainda não está
+ * cheia, e ignora dias sem nenhuma atividade dentro da janela (não entram no cálculo, nem no divisor). */
 function calcularMediaMovel(dados: PontoDiario[], janela = 7): Ponto[] {
   return dados.map((ponto, i) => {
-    const fatia = dados.slice(Math.max(0, i - janela + 1), i + 1);
-    const media = fatia.reduce((acc, p) => acc + p.faturamento, 0) / fatia.length;
+    const fatia = dados.slice(Math.max(0, i - janela + 1), i + 1).filter((p) => p.faturamento > 0);
+    const media = fatia.length > 0 ? fatia.reduce((acc, p) => acc + p.faturamento, 0) / fatia.length : 0;
     return { ...ponto, mediaMovel: media };
   });
 }
@@ -176,32 +207,25 @@ export function GraficoCombinado({
   const diasComVenda = pontos.filter((p) => p.faturamento > 0).length;
   const diasZerados = pontos.length - diasComVenda;
   const mostrarMediaMovel = diasComVenda >= 5;
+  const [expandido, setExpandido] = React.useState(false);
 
-  return (
-    <Card
-      className="rounded-[8px] shadow-none"
-      style={{ background: cores.background, borderColor: cores.border }}
-    >
-      <CardHeader>
-        <CardTitle className="text-sm font-medium" style={{ color: cores.textPrimary }}>
-          {titulo}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+  function renderConteudoGrafico(altura: number) {
+    return (
+      <>
         <ResponsiveContainer
           width="100%"
-          height={240}
+          height={altura}
           role="img"
           aria-label={`Gráfico de faturamento diário e veículos atendidos, ${titulo}`}
         >
-          <ComposedChart data={pontos} margin={{ top: 24, right: 36, bottom: 0, left: 0 }}>
+          <ComposedChart data={pontos} margin={{ top: 24, right: 36, bottom: 4, left: 0 }}>
             <XAxis
               dataKey="dia"
-              tickFormatter={formatarDiaCurto}
               tickLine={false}
               axisLine={false}
-              tick={{ fill: cores.textMuted, fontSize: 10 }}
               interval={0}
+              height={36}
+              tick={(props) => <TickDiaMes {...props} cor={cores.textMuted} />}
             />
             <YAxis yAxisId="faturamento" tickLine={false} axisLine={false} tick={false} width={4} />
             <YAxis
@@ -340,7 +364,40 @@ export function GraficoCombinado({
             registradas no sistema.
           </p>
         )}
-      </CardContent>
+      </>
+    );
+  }
+
+  return (
+    <Card className="rounded-[8px] shadow-none" style={{ background: cores.background }}>
+      <CardHeader>
+        <CardTitle className="text-sm font-medium" style={{ color: cores.textPrimary }}>
+          {titulo}
+        </CardTitle>
+        <CardAction>
+          <button
+            type="button"
+            onClick={() => setExpandido(true)}
+            aria-label="Expandir gráfico"
+            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <Maximize2 className="size-4" />
+          </button>
+        </CardAction>
+      </CardHeader>
+      <CardContent>{renderConteudoGrafico(240)}</CardContent>
+
+      <Dialog open={expandido} onOpenChange={setExpandido}>
+        <DialogContent
+          className="ring-0 sm:max-w-4xl"
+          style={{ background: cores.background, outline: "none" }}
+        >
+          <DialogHeader>
+            <DialogTitle style={{ color: cores.textPrimary }}>{titulo}</DialogTitle>
+          </DialogHeader>
+          {renderConteudoGrafico(440)}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
