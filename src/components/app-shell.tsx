@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   Bell,
   Calendar,
   ChevronDown,
@@ -20,6 +21,7 @@ import {
 
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { formatarData } from "@/lib/formatar-data";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -42,7 +44,7 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UnidadeProvider, useUnidade } from "@/components/providers/unidade-provider";
 import type { AbaSlug } from "@/lib/abas";
-import type { DashboardResumo, Unidade, Usuario } from "@/types/database";
+import type { ClienteParaReativar, DashboardResumo, Unidade, Usuario } from "@/types/database";
 
 type Icone = React.ComponentType<{ className?: string }>;
 
@@ -373,20 +375,138 @@ function UnidadeSeletor() {
   );
 }
 
-function NotificacoesMenu() {
+type OsAtrasada = { id: string; numero: number; entrada_em: string; cliente_nome: string };
+type UsuarioPendenteResumo = { id: string; nome: string; email: string };
+
+/** Notificações "ao vivo" — mesmo espírito das bolinhas de contagem do menu
+ * (sem tabela própria, sem histórico/lido-não-lido): sempre reflete o estado
+ * atual do banco. "Novo" em reativação é um proxy (15–17 dias desde o
+ * último atendimento) já que não guardamos o momento exato em que cruzou
+ * o limite de 15 dias. */
+function useNotificacoes(isAdmin: boolean) {
+  const { unidadeSelecionadaId } = useUnidade();
+  const [reativacao, setReativacao] = React.useState<ClienteParaReativar[]>([]);
+  const [atrasadas, setAtrasadas] = React.useState<OsAtrasada[]>([]);
+  const [pendentes, setPendentes] = React.useState<UsuarioPendenteResumo[]>([]);
+
+  React.useEffect(() => {
+    let cancelado = false;
+
+    async function carregar() {
+      const supabase = createClient();
+
+      let queryAtrasadas = supabase
+        .from("ordens_servico")
+        .select("id, numero, entrada_em, cliente_id")
+        .eq("status", "agendado")
+        .lt("entrada_em", new Date().toISOString())
+        .order("entrada_em", { ascending: true })
+        .limit(8);
+      if (unidadeSelecionadaId) queryAtrasadas = queryAtrasadas.eq("unidade_id", unidadeSelecionadaId);
+
+      const [{ data: reativacaoData }, { data: atrasadasData }, { data: pendentesData }] = await Promise.all([
+        supabase.rpc("clientes_para_reativar", { p_unidade_id: unidadeSelecionadaId }),
+        queryAtrasadas,
+        isAdmin
+          ? supabase.from("usuarios").select("id, nome, email").eq("status", "pendente").order("criado_em")
+          : Promise.resolve({ data: [] as UsuarioPendenteResumo[] }),
+      ]);
+
+      if (cancelado) return;
+
+      const clienteIds = [...new Set((atrasadasData ?? []).map((o) => o.cliente_id))];
+      const { data: clientesData } = clienteIds.length
+        ? await supabase.from("clientes").select("id, nome").in("id", clienteIds)
+        : { data: [] as { id: string; nome: string }[] };
+      const nomePorCliente = new Map((clientesData ?? []).map((c) => [c.id, c.nome]));
+
+      if (cancelado) return;
+
+      setReativacao(((reativacaoData ?? []) as ClienteParaReativar[]).filter((c) => c.dias_desde_ultimo <= 17));
+      setAtrasadas(
+        (atrasadasData ?? []).map((o) => ({
+          id: o.id,
+          numero: o.numero,
+          entrada_em: o.entrada_em,
+          cliente_nome: nomePorCliente.get(o.cliente_id) ?? "Cliente",
+        }))
+      );
+      setPendentes(pendentesData ?? []);
+    }
+
+    carregar();
+    const intervalo = setInterval(carregar, 60_000);
+    return () => {
+      cancelado = true;
+      clearInterval(intervalo);
+    };
+  }, [unidadeSelecionadaId, isAdmin]);
+
+  return { reativacao, atrasadas, pendentes };
+}
+
+function NotificacoesMenu({ isAdmin }: { isAdmin: boolean }) {
+  const { reativacao, atrasadas, pendentes } = useNotificacoes(isAdmin);
+  const total = reativacao.length + atrasadas.length + pendentes.length;
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label="Notificações" />}>
+      <DropdownMenuTrigger
+        render={<Button variant="outline" size="icon" aria-label="Notificações" className="relative" />}
+      >
         <Bell className="size-4" />
+        {total > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full border-2 border-background bg-[image:var(--gradient-cta)] px-1 text-[10px] leading-none font-semibold text-[#101314]">
+            {total > 9 ? "9+" : total}
+          </span>
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Notificações</DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <p className="px-1.5 py-3 text-center text-sm text-muted-foreground">
-          Nenhuma notificação por enquanto.
-        </p>
+        {total === 0 ? (
+          <p className="px-1.5 py-3 text-center text-sm text-muted-foreground">
+            Nenhuma notificação por enquanto.
+          </p>
+        ) : (
+          <div className="flex max-h-80 flex-col gap-0.5 overflow-y-auto">
+            {pendentes.map((u) => (
+              <DropdownMenuItem key={`usuario-${u.id}`} render={<Link href="/usuarios" />}>
+                <UserCog className="size-4 shrink-0 text-muted-foreground" />
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate">{u.nome} solicitou acesso</span>
+                  <span className="truncate text-xs text-muted-foreground">{u.email}</span>
+                </span>
+              </DropdownMenuItem>
+            ))}
+            {atrasadas.map((o) => (
+              <DropdownMenuItem key={`os-${o.id}`} render={<Link href={`/ordens/${o.id}`} />}>
+                <AlertTriangle className="size-4 shrink-0 text-muted-foreground" />
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate">
+                    OS #{o.numero} · {o.cliente_nome}
+                  </span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    Agendada para {formatarData(o.entrada_em)} e ainda não iniciada
+                  </span>
+                </span>
+              </DropdownMenuItem>
+            ))}
+            {reativacao.map((c) => (
+              <DropdownMenuItem key={`reativacao-${c.cliente_id}`} render={<Link href="/reativacao" />}>
+                <Zap className="size-4 shrink-0 text-muted-foreground" />
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate">{c.nome} entrou para reativação</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    há {c.dias_desde_ultimo} dias sem atendimento
+                  </span>
+                </span>
+              </DropdownMenuItem>
+            ))}
+          </div>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -738,7 +858,7 @@ export function AppShell({
 
               <div className="ml-auto flex shrink-0 items-center gap-2">
                 <ThemeToggle />
-                <NotificacoesMenu />
+                <NotificacoesMenu isAdmin={isAdmin} />
                 <Separator orientation="vertical" className="hidden h-6 sm:block" />
                 <UnidadeSeletor />
               </div>
