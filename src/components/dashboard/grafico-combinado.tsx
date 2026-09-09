@@ -339,7 +339,7 @@ export function GraficoCombinado({
           {mostrarMediaMovel && (
             <ItemLegenda
               cor={cores.trend}
-              label="Média móvel (7 dias)"
+              label="Média móvel (7 dias) R$"
               corTexto={cores.textSecondary}
               tracejado
               ativo={!seriesOcultas.has("mediaMovel")}
@@ -348,7 +348,7 @@ export function GraficoCombinado({
           )}
           <ItemLegenda
             cor={cores.dataDark}
-            label="Veículos"
+            label="Veículos Qtd"
             corTexto={cores.textSecondary}
             ativo={!seriesOcultas.has("veiculos")}
             onClick={() => alternarSerie("veiculos")}
