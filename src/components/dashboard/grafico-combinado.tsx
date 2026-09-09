@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, ComposedChart, LabelList, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import type { DashboardInsights } from "@/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,9 +49,8 @@ function formatarMoeda(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function formatarMoedaCompacta(valor: number) {
-  if (valor >= 1000) return `R$ ${(valor / 1000).toFixed(1)}K`;
-  return `R$ ${valor.toFixed(0)}`;
+function formatarInteiro(valor: number) {
+  return Math.round(valor).toLocaleString("pt-BR", { maximumFractionDigits: 0 });
 }
 
 function formatarDiaCurto(diaIso: string) {
@@ -104,14 +103,24 @@ function ItemLegenda({
   label,
   corTexto,
   tracejado,
+  ativo,
+  onClick,
 }: {
   cor: string;
   label: string;
   corTexto: string;
   tracejado?: boolean;
+  ativo: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: corTexto }}>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={ativo}
+      className="flex items-center gap-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+      style={{ color: corTexto, opacity: ativo ? 1 : 0.4 }}
+    >
       <span
         className="h-0.5 w-3 shrink-0 rounded-full"
         style={{
@@ -122,12 +131,14 @@ function ItemLegenda({
         }}
       />
       {label}
-    </div>
+    </button>
   );
 }
 
 type PropsFormaBarra = { x?: number; y?: number; width?: number; height?: number; payload?: Ponto };
 type PropsPontoLinha = { cx?: number; cy?: number; payload?: Ponto };
+type PropsRotuloUltimoPonto = { x?: number; y?: number; index?: number; value?: number };
+type ChaveSerie = "faturamento" | "mediaMovel" | "veiculos";
 
 /** Gráfico combinado (seção 3.4 do escopo original, refinado pela seção 4.5 das melhorias): faturamento em barras, veículos/dia em linha sobre um eixo secundário e média móvel de 7 dias tracejada quando há dados suficientes para significar algo. */
 export function GraficoCombinado({
@@ -140,6 +151,16 @@ export function GraficoCombinado({
   const pontos = calcularMediaMovel(dados);
   const { resolvedTheme } = useTheme();
   const [montado, setMontado] = React.useState(false);
+  const [seriesOcultas, setSeriesOcultas] = React.useState<Set<ChaveSerie>>(() => new Set());
+
+  function alternarSerie(serie: ChaveSerie) {
+    setSeriesOcultas((atual) => {
+      const proximo = new Set(atual);
+      if (proximo.has(serie)) proximo.delete(serie);
+      else proximo.add(serie);
+      return proximo;
+    });
+  }
 
   React.useEffect(() => {
     // next-themes só sabe o tema real depois de ler o localStorage no
@@ -173,40 +194,31 @@ export function GraficoCombinado({
           role="img"
           aria-label={`Gráfico de faturamento diário e veículos atendidos, ${titulo}`}
         >
-          <ComposedChart data={pontos} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid vertical={false} stroke={cores.grid} strokeWidth={1} />
+          <ComposedChart data={pontos} margin={{ top: 24, right: 36, bottom: 0, left: 0 }}>
             <XAxis
               dataKey="dia"
               tickFormatter={formatarDiaCurto}
               tickLine={false}
               axisLine={false}
-              tick={{ fill: cores.textMuted, fontSize: 12 }}
-              interval={2}
+              tick={{ fill: cores.textMuted, fontSize: 10 }}
+              interval={0}
             />
-            <YAxis
-              yAxisId="faturamento"
-              tickFormatter={formatarMoedaCompacta}
-              tickLine={false}
-              axisLine={false}
-              width={56}
-              tick={{ fill: cores.textMuted, fontSize: 12 }}
-              label={{ value: "R$", position: "top", offset: 12, fill: cores.textMuted, fontSize: 11 }}
-            />
+            <YAxis yAxisId="faturamento" tickLine={false} axisLine={false} tick={false} width={4} />
             <YAxis
               yAxisId="veiculos"
               orientation="right"
               allowDecimals={false}
               tickLine={false}
               axisLine={false}
-              width={40}
-              tick={{ fill: cores.textMuted, fontSize: 12 }}
-              label={{ value: "Veículos", position: "top", offset: 12, fill: cores.textMuted, fontSize: 11 }}
+              tick={false}
+              width={4}
             />
             <Tooltip cursor={{ fill: cores.grid, opacity: 0.4 }} content={<TooltipConteudo cores={cores} />} />
             <Bar
               yAxisId="faturamento"
               dataKey="faturamento"
-              maxBarSize={22}
+              maxBarSize={30}
+              hide={seriesOcultas.has("faturamento")}
               shape={(props) => {
                 // Em dias sem nenhum lançamento, desenha um traço de 3px na
                 // linha de base em vez de altura zero: o dia existe e está
@@ -218,24 +230,48 @@ export function GraficoCombinado({
                 }
                 return <rect x={x} y={y} width={width} height={height} rx={3} ry={3} fill={cores.primary} />;
               }}
-            />
+            >
+              <LabelList
+                dataKey="faturamento"
+                position="top"
+                fill={cores.textSecondary}
+                fontSize={14}
+                fontWeight={700}
+                formatter={(valor) => (typeof valor === "number" && valor > 0 ? formatarInteiro(valor) : "")}
+              />
+            </Bar>
             {mostrarMediaMovel && (
               <Line
                 yAxisId="faturamento"
-                type="linear"
+                type="monotone"
                 dataKey="mediaMovel"
                 stroke={cores.trend}
                 strokeWidth={2}
                 strokeDasharray="4 4"
                 dot={false}
-              />
+                hide={seriesOcultas.has("mediaMovel")}
+              >
+                <LabelList
+                  dataKey="mediaMovel"
+                  content={(props) => {
+                    const { x, y, index, value } = props as PropsRotuloUltimoPonto;
+                    if (index !== pontos.length - 1 || x == null || y == null || value == null) return null;
+                    return (
+                      <text x={x + 6} y={y} dy={4} textAnchor="start" fontSize={16} fontWeight={600} fill={cores.trend}>
+                        {formatarInteiro(value)}
+                      </text>
+                    );
+                  }}
+                />
+              </Line>
             )}
             <Line
               yAxisId="veiculos"
-              type="linear"
+              type="monotone"
               dataKey="qtd_servicos"
               stroke={cores.dataDark}
               strokeWidth={2}
+              hide={seriesOcultas.has("veiculos")}
               dot={(props) => {
                 // Ponto só aparece em dias com atendimento — em dia zerado
                 // sugeriria um dado que não foi coletado (seção 4.5).
@@ -256,16 +292,43 @@ export function GraficoCombinado({
                 );
               }}
               activeDot={{ r: 3, fill: cores.primary, stroke: cores.dataDark, strokeWidth: 1.5 }}
-            />
+            >
+              <LabelList
+                dataKey="qtd_servicos"
+                position="top"
+                fill={cores.textMuted}
+                fontSize={12}
+                formatter={(valor) => (typeof valor === "number" && valor > 0 ? formatarInteiro(valor) : "")}
+              />
+            </Line>
           </ComposedChart>
         </ResponsiveContainer>
 
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-          <ItemLegenda cor={cores.primary} label="Faturamento" corTexto={cores.textSecondary} />
+          <ItemLegenda
+            cor={cores.primary}
+            label="Faturamento R$"
+            corTexto={cores.textSecondary}
+            ativo={!seriesOcultas.has("faturamento")}
+            onClick={() => alternarSerie("faturamento")}
+          />
           {mostrarMediaMovel && (
-            <ItemLegenda cor={cores.trend} label="Média móvel (7 dias)" corTexto={cores.textSecondary} tracejado />
+            <ItemLegenda
+              cor={cores.trend}
+              label="Média móvel (7 dias)"
+              corTexto={cores.textSecondary}
+              tracejado
+              ativo={!seriesOcultas.has("mediaMovel")}
+              onClick={() => alternarSerie("mediaMovel")}
+            />
           )}
-          <ItemLegenda cor={cores.dataDark} label="Veículos" corTexto={cores.textSecondary} />
+          <ItemLegenda
+            cor={cores.dataDark}
+            label="Veículos"
+            corTexto={cores.textSecondary}
+            ativo={!seriesOcultas.has("veiculos")}
+            onClick={() => alternarSerie("veiculos")}
+          />
         </div>
 
         {diasZerados > 0 && (
