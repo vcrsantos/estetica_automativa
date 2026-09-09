@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ReciboPdf } from "@/components/recibos/recibo-pdf";
 import { CancelarReciboDialog } from "@/components/recibos/cancelar-recibo-dialog";
 import { FORMA_PAGAMENTO_LABELS } from "@/lib/validations/ordem-servico";
+import { formatarData } from "@/lib/formatar-data";
 import type { FormaPagamento, OrdemServico, Recibo, ReciboItem } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -89,7 +90,7 @@ export function ReciboDetail({
       {cancelado && (
         <Card className="max-w-lg border-destructive/40">
           <CardContent className="py-4 text-sm text-destructive">
-            Cancelado em {new Date(recibo.cancelado_em!).toLocaleDateString("pt-BR")}. Motivo:{" "}
+            Cancelado em {formatarData(recibo.cancelado_em!)}. Motivo:{" "}
             {recibo.motivo_cancelamento}
           </CardContent>
         </Card>
@@ -116,7 +117,7 @@ export function ReciboDetail({
           <CardContent className="flex flex-col gap-1 text-sm">
             <p>Tipo: {TIPO_LABELS[recibo.tipo]}</p>
             <p>Forma: {FORMA_PAGAMENTO_LABELS[recibo.forma_pagamento as FormaPagamento] ?? recibo.forma_pagamento}</p>
-            <p>Data: {new Date(recibo.data_pagamento).toLocaleDateString("pt-BR", { timeZone: "UTC" })}</p>
+            <p>Data: {formatarData(recibo.data_pagamento, { timeZone: "UTC" })}</p>
             {osVinculadas.length > 0 && (
               <p>OS incluídas: {osVinculadas.map((os) => `#${os.numero}`).join(", ")}</p>
             )}

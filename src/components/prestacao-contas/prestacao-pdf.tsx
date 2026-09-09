@@ -115,11 +115,15 @@ function formatarMoeda(valor: number) {
 }
 
 function formatarData(data: string) {
-  return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
+  return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 function formatarDataHora(data: string) {
-  return new Date(data).toLocaleDateString("pt-BR");
+  return new Date(data).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 export function PrestacaoPdf({

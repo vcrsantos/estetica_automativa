@@ -5,6 +5,7 @@ import { CheckCircle2, ChevronDown, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { formatarData } from "@/lib/formatar-data";
 import { linkWhatsApp } from "@/lib/whatsapp";
 import { ESTILOS_MENSAGEM, montarMensagemReativacao } from "@/lib/reativacao-mensagens";
 import { useUnidade } from "@/components/providers/unidade-provider";
@@ -133,7 +134,7 @@ export function ReativacaoList() {
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <p>
-                      {new Date(cliente.ultimo_atendimento).toLocaleDateString("pt-BR")}
+                      {formatarData(cliente.ultimo_atendimento)}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       há {cliente.dias_desde_ultimo} dias

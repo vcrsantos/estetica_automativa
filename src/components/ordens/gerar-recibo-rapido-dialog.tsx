@@ -37,11 +37,16 @@ function formatarMoeda(valor: number) {
 }
 
 function formatarDataHora(data: string) {
-  return new Date(data).toLocaleDateString("pt-BR");
+  return new Date(data).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 function formatarDataPagamento(data: string) {
-  return new Date(data).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+  return new Date(data).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 function iniciais(nome: string) {

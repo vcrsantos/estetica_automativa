@@ -7,6 +7,7 @@ import { Plus, Settings2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUnidade } from "@/components/providers/unidade-provider";
 import { calcularPeriodo, type PeriodoId } from "@/lib/dashboard-periodo";
+import { formatarData } from "@/lib/formatar-data";
 import { SeletorPeriodo } from "@/components/dashboard/seletor-periodo";
 import type { Cliente, Recibo, ReciboStatus, ReciboTipo } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
@@ -197,7 +198,7 @@ export function RecibosList({ isAdmin }: { isAdmin: boolean }) {
                     </TableCell>
                     <TableCell>{nome}</TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      {new Date(recibo.data_emissao).toLocaleDateString("pt-BR")}
+                      {formatarData(recibo.data_emissao)}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">{TIPO_LABELS[recibo.tipo]}</TableCell>
                     <TableCell className="hidden sm:table-cell">{formatarMoeda(recibo.valor)}</TableCell>

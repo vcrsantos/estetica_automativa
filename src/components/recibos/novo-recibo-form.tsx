@@ -6,6 +6,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { formatarData } from "@/lib/formatar-data";
 import { valorPorExtenso } from "@/lib/valor-por-extenso";
 import { FORMA_PAGAMENTO_LABELS, STATUS_PAGAMENTO_LABELS } from "@/lib/validations/ordem-servico";
 import { ClienteBuscaRapida } from "@/components/clientes/cliente-busca-rapida";
@@ -349,7 +350,7 @@ export function NovoReciboForm({
                   <div>
                     <p className="font-medium">OS #{os.numero}</p>
                     <p className="text-muted-foreground">
-                      {new Date(os.entrada_em).toLocaleDateString("pt-BR")} ·{" "}
+                      {formatarData(os.entrada_em)} ·{" "}
                       {STATUS_PAGAMENTO_LABELS[os.status_pagamento]}
                     </p>
                   </div>

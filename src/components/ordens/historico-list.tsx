@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, FileText, Pencil, Plus, Search, Trash2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { formatarData } from "@/lib/formatar-data";
 import { useUnidade } from "@/components/providers/unidade-provider";
 import { STATUS_OS_LABELS } from "@/lib/validations/ordem-servico";
 import type { Cliente, OrdemServico, StatusOs, Veiculo } from "@/types/database";
@@ -246,7 +247,7 @@ export function HistoricoList() {
                       #{os.numero}
                     </Link>
                   </TableCell>
-                  <TableCell>{new Date(os.entrada_em).toLocaleDateString("pt-BR")}</TableCell>
+                  <TableCell>{formatarData(os.entrada_em)}</TableCell>
                   <TableCell>{cliente?.nome ?? "—"}</TableCell>
                   <TableCell className="hidden text-muted-foreground sm:table-cell">
                     {veiculo ? veiculo.placa || veiculo.modelo || "—" : "Sem veículo"}

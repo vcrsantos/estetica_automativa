@@ -467,7 +467,13 @@ export function OrdemDetail({
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {unidade.nome} · aberta em{" "}
-            {new Date(os.entrada_em).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+            {new Date(os.entrada_em).toLocaleString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </p>
         </div>
 

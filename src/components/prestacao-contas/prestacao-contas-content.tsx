@@ -41,7 +41,11 @@ function formatarMoeda(valor: number) {
 }
 
 function formatarData(data: string) {
-  return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
+  return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 function hojeIso() {
@@ -332,7 +336,11 @@ export function PrestacaoContasContent({
                       onChange={() => alternarSelecao(os.id)}
                     />
                     <span className="w-20 shrink-0 text-muted-foreground">
-                      {new Date(os.entrada_em).toLocaleDateString("pt-BR")}
+                      {new Date(os.entrada_em).toLocaleDateString("pt-BR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
                     </span>
                     <span className="flex-1">OS #{os.numero}</span>
                     <Badge variant="outline">{STATUS_OS_LABELS[os.status]}</Badge>

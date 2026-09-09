@@ -8,6 +8,7 @@ import { Ban, CheckCircle2, Download, Loader2, MessageCircle, Receipt } from "lu
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
+import { formatarData as formatarDataIso } from "@/lib/formatar-data";
 import { linkWhatsApp } from "@/lib/whatsapp";
 import { PORTE_LABELS } from "@/lib/validations/cliente";
 import { PrestacaoPdf } from "@/components/prestacao-contas/prestacao-pdf";
@@ -23,7 +24,11 @@ function formatarMoeda(valor: number) {
 }
 
 function formatarData(data: string) {
-  return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
+  return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 function hojeIso() {
@@ -179,7 +184,7 @@ export function PrestacaoDetail({
             <div>
               <p className="font-medium">Pagamento confirmado</p>
               <p className="text-sm text-muted-foreground">
-                {prestacao.pago_em && `Recebido em ${new Date(prestacao.pago_em).toLocaleDateString("pt-BR")}`}
+                {prestacao.pago_em && `Recebido em ${formatarDataIso(prestacao.pago_em)}`}
               </p>
             </div>
             <Button variant="outline" render={<Link href={`/recibos/${prestacao.recibo_id}`} />} nativeButton={false}>
@@ -193,7 +198,7 @@ export function PrestacaoDetail({
       {prestacao.status === "cancelado" && (
         <Card className="max-w-lg border-destructive/40">
           <CardContent className="py-4 text-sm text-destructive">
-            Cancelada em {prestacao.cancelado_em && new Date(prestacao.cancelado_em).toLocaleDateString("pt-BR")}
+            Cancelada em {prestacao.cancelado_em && formatarDataIso(prestacao.cancelado_em)}
             . Motivo: {prestacao.motivo_cancelamento}
           </CardContent>
         </Card>

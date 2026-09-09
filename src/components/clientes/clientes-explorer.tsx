@@ -17,6 +17,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { searchClientes } from "@/lib/clientes/search";
 import { cn } from "@/lib/utils";
+import { formatarData } from "@/lib/formatar-data";
 import type { Cliente } from "@/types/database";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -295,7 +296,7 @@ export function ClientesExplorer({
                     {cliente.cidade || "—"}
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground sm:table-cell">
-                    {new Date(cliente.criado_em).toLocaleDateString("pt-BR")}
+                    {formatarData(cliente.criado_em)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">

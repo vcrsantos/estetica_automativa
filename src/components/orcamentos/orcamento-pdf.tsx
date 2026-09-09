@@ -105,7 +105,12 @@ function formatarMoeda(valor: number) {
 
 function formatarData(data: string | null) {
   if (!data) return "—";
-  return new Date(data).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+  return new Date(data).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 export function OrcamentoPdf({

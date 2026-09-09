@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { formatarData } from "@/lib/formatar-data";
 import { useUnidade } from "@/components/providers/unidade-provider";
 import type { Cliente, Orcamento, StatusOrcamento } from "@/types/database";
 import { Badge } from "@/components/ui/badge";
@@ -131,7 +132,7 @@ export function OrcamentosList() {
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       {orcamento.validade_em
-                        ? new Date(orcamento.validade_em).toLocaleDateString("pt-BR", { timeZone: "UTC" })
+                        ? formatarData(orcamento.validade_em, { timeZone: "UTC" })
                         : "—"}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">

@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { createClient } from "@/lib/supabase/client";
+import { formatarData } from "@/lib/formatar-data";
 import { useUnidade } from "@/components/providers/unidade-provider";
 import { FORMA_PAGAMENTO_LABELS } from "@/lib/validations/ordem-servico";
 import type { Despesa, FinanceiroResumo, FormaPagamento } from "@/types/database";
@@ -149,7 +150,7 @@ export function FinanceiroContent({ podeEditar }: { podeEditar: boolean }) {
                     {resumo.despesas_mes.map((d) => (
                       <TableRow key={d.id}>
                         <TableCell className="whitespace-nowrap">
-                          {new Date(`${d.data}T00:00:00`).toLocaleDateString("pt-BR")}
+                          {formatarData(`${d.data}T00:00:00`)}
                         </TableCell>
                         <TableCell>{d.categoria}</TableCell>
                         <TableCell className="text-muted-foreground">{d.descricao ?? "—"}</TableCell>

@@ -6,6 +6,7 @@ import { MessageCircle } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { linkWhatsApp } from "@/lib/whatsapp";
+import { formatarData } from "@/lib/formatar-data";
 import { useUnidade } from "@/components/providers/unidade-provider";
 import { STATUS_PAGAMENTO_LABELS } from "@/lib/validations/ordem-servico";
 import type { Cliente, OrdemServico, OsItem } from "@/types/database";
@@ -29,7 +30,7 @@ function montarMensagemCobranca(grupo: GrupoCliente) {
   const primeiroNome = grupo.cliente.nome.split(" ")[0];
   const linhas = grupo.ordens
     .map((os) => {
-      const data = new Date(os.entrada_em).toLocaleDateString("pt-BR");
+      const data = formatarData(os.entrada_em);
       const servicos = os.itens.map((i) => i.descricao).join(", ") || "Serviço";
       const status = STATUS_PAGAMENTO_LABELS[os.status_pagamento].toLowerCase();
       return `• ${data} — ${servicos} — ${formatarMoeda(os.valor_total)} (${status})`;
@@ -185,7 +186,7 @@ export function ContasAReceberList() {
                   <div>
                     <p>{os.itens.map((i) => i.descricao).join(", ") || "Serviço"}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(os.entrada_em).toLocaleDateString("pt-BR")} · #{os.numero}
+                      {formatarData(os.entrada_em)} · #{os.numero}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

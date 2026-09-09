@@ -8,6 +8,7 @@ import { CalendarCheck, Download, Loader2, MessageCircle, ThumbsDown, ThumbsUp, 
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
+import { formatarData } from "@/lib/formatar-data";
 import { linkWhatsApp } from "@/lib/whatsapp";
 import { OrcamentoPdf } from "@/components/orcamentos/orcamento-pdf";
 import { ClienteBuscaRapida } from "@/components/clientes/cliente-busca-rapida";
@@ -140,9 +141,7 @@ export function OrcamentoDetail({
       } = supabase.storage.from("orcamentos").getPublicUrl(caminho);
 
       const mensagem = `Oi, ${nomeContato.split(" ")[0]}! Segue o orçamento #${orcamento.numero} da POLIBRILHO ${unidade.nome}: ${publicUrl}\n\nVálido até ${
-        orcamento.validade_em
-          ? new Date(orcamento.validade_em).toLocaleDateString("pt-BR", { timeZone: "UTC" })
-          : "—"
+        orcamento.validade_em ? formatarData(orcamento.validade_em, { timeZone: "UTC" }) : "—"
       }.`;
 
       window.open(linkWhatsApp(telefoneContato, mensagem), "_blank", "noopener,noreferrer");
@@ -406,9 +405,7 @@ export function OrcamentoDetail({
             </div>
             <p className="pt-2 text-muted-foreground">
               Válido até{" "}
-              {orcamento.validade_em
-                ? new Date(orcamento.validade_em).toLocaleDateString("pt-BR", { timeZone: "UTC" })
-                : "—"}
+              {orcamento.validade_em ? formatarData(orcamento.validade_em, { timeZone: "UTC" }) : "—"}
             </p>
             {orcamento.condicoes && <p className="text-muted-foreground">{orcamento.condicoes}</p>}
           </CardContent>
