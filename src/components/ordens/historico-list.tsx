@@ -14,6 +14,7 @@ import { CancelarOsDialog } from "@/components/ordens/cancelar-os-dialog";
 import { GerarReciboRapidoDialog } from "@/components/ordens/gerar-recibo-rapido-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -165,11 +166,11 @@ export function HistoricoList() {
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs text-muted-foreground">De</label>
-          <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="w-40" />
+          <DatePicker value={dataInicio} onChange={setDataInicio} className="w-40" />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs text-muted-foreground">Até</label>
-          <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="w-40" />
+          <DatePicker value={dataFim} onChange={setDataFim} className="w-40" />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs text-muted-foreground">Status</label>

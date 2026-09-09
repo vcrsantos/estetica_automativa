@@ -3,7 +3,7 @@
 import { CalendarRange } from "lucide-react";
 
 import { PERIODO_OPCOES, type PeriodoSelecionado, type PeriodoId } from "@/lib/dashboard-periodo";
-import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ITENS_SELECT = {
@@ -58,18 +58,16 @@ export function SeletorPeriodo({
 
       {periodoId === "personalizado" && (
         <div className="flex items-center gap-1.5">
-          <Input
-            type="date"
+          <DatePicker
             className="h-7 w-[8.5rem]"
             value={personalizado.inicio}
-            onChange={(e) => onPersonalizadoChange({ ...personalizado, inicio: e.target.value })}
+            onChange={(v) => onPersonalizadoChange({ ...personalizado, inicio: v })}
           />
           <span className="text-xs text-muted-foreground">até</span>
-          <Input
-            type="date"
+          <DatePicker
             className="h-7 w-[8.5rem]"
             value={personalizado.fim}
-            onChange={(e) => onPersonalizadoChange({ ...personalizado, fim: e.target.value })}
+            onChange={(v) => onPersonalizadoChange({ ...personalizado, fim: v })}
           />
         </div>
       )}

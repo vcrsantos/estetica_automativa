@@ -14,6 +14,7 @@ import {
 } from "@/lib/validations/despesa";
 import type { Despesa, Unidade } from "@/types/database";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -171,7 +172,13 @@ export function NovaDespesaDialog({
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="data">Data</Label>
-              <Input id="data" type="date" {...register("data")} />
+              <Controller
+                control={control}
+                name="data"
+                render={({ field }) => (
+                  <DatePicker id="data" value={field.value} onChange={field.onChange} />
+                )}
+              />
             </div>
           </div>
 

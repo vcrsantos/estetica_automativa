@@ -21,6 +21,7 @@ import type {
 } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -485,7 +486,7 @@ export function NovoReciboForm({
 
           <div className="flex flex-col gap-2">
             <Label>Data do pagamento</Label>
-            <Input type="date" value={dataPagamento} onChange={(e) => setDataPagamento(e.target.value)} />
+            <DatePicker value={dataPagamento} onChange={setDataPagamento} />
           </div>
 
           <div className="flex flex-col gap-2">

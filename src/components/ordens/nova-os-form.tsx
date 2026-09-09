@@ -16,6 +16,7 @@ import { ClienteBuscaRapida } from "@/components/clientes/cliente-busca-rapida";
 import { VeiculoSelect } from "@/components/ordens/veiculo-select";
 import { ExecutorSelect } from "@/components/ordens/executor-select";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -376,11 +377,10 @@ export function NovaOsForm({
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="data-servico">Data do serviço</Label>
-            <Input
+            <DatePicker
               id="data-servico"
-              type="date"
               value={dataServico}
-              onChange={(e) => alterarDataServico(e.target.value)}
+              onChange={alterarDataServico}
               className="w-40"
             />
           </div>

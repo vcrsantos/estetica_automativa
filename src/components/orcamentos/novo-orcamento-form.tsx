@@ -12,6 +12,7 @@ import type { Cliente, Preco, PorteVeiculo, Servico, Unidade, Veiculo } from "@/
 import { ClienteBuscaRapida } from "@/components/clientes/cliente-busca-rapida";
 import { VeiculoSelect } from "@/components/ordens/veiculo-select";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -380,12 +381,7 @@ export function NovoOrcamentoForm({
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="validade">Validade</Label>
-          <Input
-            id="validade"
-            type="date"
-            value={validadeEm}
-            onChange={(e) => setValidadeEm(e.target.value)}
-          />
+          <DatePicker id="validade" value={validadeEm} onChange={setValidadeEm} />
         </div>
         <div className="flex flex-col gap-2 sm:col-span-2">
           <Label htmlFor="condicoes">Condições de pagamento</Label>

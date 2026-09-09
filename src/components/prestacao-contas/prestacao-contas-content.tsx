@@ -22,6 +22,7 @@ import { STATUS_OS_LABELS } from "@/lib/validations/ordem-servico";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -267,19 +268,15 @@ export function PrestacaoContasContent({
             </div>
             <div className="flex flex-col gap-2">
               <Label>Início do período</Label>
-              <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
+              <DatePicker value={dataInicio} onChange={setDataInicio} />
             </div>
             <div className="flex flex-col gap-2">
               <Label>Fim do período</Label>
-              <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
+              <DatePicker value={dataFim} onChange={setDataFim} />
             </div>
             <div className="flex flex-col gap-2">
               <Label>Vencimento (opcional)</Label>
-              <Input
-                type="date"
-                value={dataVencimento}
-                onChange={(e) => setDataVencimento(e.target.value)}
-              />
+              <DatePicker value={dataVencimento} onChange={setDataVencimento} />
             </div>
             <div className="flex flex-col gap-2">
               <Label>Telefone</Label>

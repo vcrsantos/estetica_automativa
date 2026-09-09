@@ -9,7 +9,7 @@ import { valorPorExtenso } from "@/lib/valor-por-extenso";
 import { FORMA_PAGAMENTO_LABELS } from "@/lib/validations/ordem-servico";
 import type { FormaPagamento } from "@/types/database";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -98,7 +98,7 @@ export function ConfirmarPagamentoDialog({
           </div>
           <div className="flex flex-col gap-2">
             <Label>Data do pagamento</Label>
-            <Input type="date" value={dataPagamento} onChange={(e) => setDataPagamento(e.target.value)} />
+            <DatePicker value={dataPagamento} onChange={setDataPagamento} />
           </div>
         </div>
         <DialogFooter>
