@@ -478,7 +478,7 @@ export function NovaOsForm({
         </div>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-between gap-4 border-t bg-background/95 px-4 py-3 backdrop-blur sm:sticky sm:rounded-md sm:border">
+      <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-4 border-t bg-background/95 px-4 py-3 backdrop-blur sm:sticky sm:rounded-md sm:border">
         <div className="text-sm">
           <p className="text-muted-foreground">Total</p>
           <p className="text-lg font-semibold">
