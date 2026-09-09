@@ -217,7 +217,7 @@ export function NovaOsForm({
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-24">
+    <div className="flex flex-col gap-6 pb-40 lg:pb-24">
       {unidades.length > 1 && (
         <div className="flex flex-col gap-2">
           <Label>Unidade</Label>
@@ -478,7 +478,7 @@ export function NovaOsForm({
         </div>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-between gap-4 border-t bg-background/95 px-4 py-3 backdrop-blur sm:sticky sm:rounded-md sm:border">
+      <div className="fixed inset-x-0 bottom-20 z-50 flex items-center justify-between gap-4 border-t bg-background/95 px-4 py-3 backdrop-blur sm:sticky sm:rounded-md sm:border lg:bottom-0">
         <div className="text-sm">
           <p className="text-muted-foreground">Total</p>
           <p className="text-lg font-semibold">
